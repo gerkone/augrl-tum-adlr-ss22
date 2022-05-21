@@ -1,2 +1,4 @@
-d3rlpy_data
-d3rlpy_logs
+__pycache__/
+.mypy_cache/
+d3rlpy_data/
+d3rlpy_logs/
