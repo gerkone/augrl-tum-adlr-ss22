@@ -1,0 +1,4 @@
+[flake8]
+ignore = D203
+exclude = .git,__pycache__,docs, d3rlpy_logs,d3rlpy_data
+max-complexity = 10
