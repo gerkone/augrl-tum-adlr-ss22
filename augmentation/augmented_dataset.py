@@ -33,9 +33,10 @@ class MDPDatasetAugmented(d3rlpy.dataset.MDPDataset):
             )
 
         # augmentation parameters
-        self._w_normal = kwargs.get("w_normal", 1e-3)
-        self._w_uniform = kwargs.get("w_uniform", 1e-5)
-        self._alpha = kwargs.get("alpha", 0.4)
+        self._sigma = kwargs.get("w_normal", 1e-3)
+        self._alpha = kwargs.get("alpha", 1e-3)
+        self._eps = kwargs.get("eps", 0.4)
+
         partial_observations = [observations]
         partial_actions = [actions]
         partial_rewards = [rewards]
@@ -109,17 +110,17 @@ class MDPDatasetAugmented(d3rlpy.dataset.MDPDataset):
         )
 
     def _gaussian(self, observations: np.ndarray) -> np.ndarray:
-        return observations + self._w_normal * np.random.normal(
-            loc=0, scale=1, size=observations.shape
+        return observations + np.random.normal(
+            loc=0, scale=self._sigma, size=observations.shape
         )
 
     def _uniform(self, observations: np.ndarray) -> np.ndarray:
-        return observations + self._w_uniform * np.random.uniform(
-            a=observations.min(), b=observations.max(), size=observations.shape
+        return observations + np.random.uniform(
+            a=-self._alpha, b=self._alpha, size=observations.shape
         )
 
     def _mixup(self, observations: np.ndarray) -> np.ndarray:
-        gamma = np.random.beta(self._alpha, self._alpha, size=observations[1:].shape)
+        gamma = np.random.beta(self._eps, self._eps, size=observations[1:].shape)
         # s_t = gamma * s_t + (1 - gamma) * s_{t+1}
         observations[:-1] = gamma * observations[:-1] * (1 - gamma) * observations[1:]
         return observations
