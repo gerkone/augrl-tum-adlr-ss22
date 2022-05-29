@@ -1,4 +1,6 @@
 d3rlpy>=1.1.0
 gym
 numpy>=1.22.3
+pandas
 pygame
+seaborn
