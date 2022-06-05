@@ -174,7 +174,7 @@ def custom_augmented_fitter(
         iterator.reset()
 
         for itr in range_gen:
-
+            
             # generate new transitions with dynamics models
             new_transitions = cls.generate_new_data(
                 transitions=iterator.transitions,
@@ -187,30 +187,53 @@ def custom_augmented_fitter(
                     fake_transitions=len(iterator.generated_transitions),
                 )
 
+            #######################################################################
+            #Generate new transitions with augumentations
+            new_transitions = []
+            for fn, args in augmentation_functions:
+                new_transitions.append(
+                    augmentation.synth.generate_new_data(iterator.transitions, fn, args)
+                )
+            
+            if new_transitions:
+                iterator.add_generated_transitions(new_transitions)
+                LOG.debug(
+                    f"{len(new_transitions)} transitions are augmented.",
+                    real_transitions=len(iterator.transitions),
+                    fake_transitions=len(iterator.generated_transitions),
+                )
+            #######################################################################
+
+            #generate 
+
             with logger.measure_time("step"):
                 # pick transitions
                 with logger.measure_time("sample_batch"):
                     clean_batch = next(iterator)
 
                 with logger.measure_time("algorithm_update"):
+                    batch = clean_batch
+                    
+
+                    """
                     for fn, args in augmentation_functions:
                         # augment on batch
                         batch = augmentation.synth.augmenter_wrapper(
                             fn, clean_batch, args
                         )
+                    """
+                    # update parameters
+                    loss = cls.update(batch)
 
-                        # update parameters
-                        loss = cls.update(batch)
+                    # record metrics
+                    for name, val in loss.items():
+                        logger.add_metric(name, val)
+                        epoch_loss[name].append(val)
 
-                        # record metrics
-                        for name, val in loss.items():
-                            logger.add_metric(name, val)
-                            epoch_loss[name].append(val)
-
-                        # update progress postfix with losses
-                        if itr % 10 == 0:
-                            mean_loss = {k: np.mean(v) for k, v in epoch_loss.items()}
-                            range_gen.set_postfix(mean_loss)
+                    # update progress postfix with losses
+                    if itr % 10 == 0:
+                        mean_loss = {k: np.mean(v) for k, v in epoch_loss.items()}
+                        range_gen.set_postfix(mean_loss)
 
             total_step += 1
 

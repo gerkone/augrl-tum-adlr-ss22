@@ -2,7 +2,7 @@
 This module contains some augmentation methods, to be used in training
 """
 
-from typing import Callable, Dict
+from typing import Callable, Dict, List, Optional
 
 import numpy as np
 from d3rlpy.dataset import Transition, TransitionMiniBatch
@@ -14,6 +14,11 @@ def augmenter_wrapper(
     augmented_transervations = [fn(trans, **args) for trans in batch.transitions]
     return TransitionMiniBatch(augmented_transervations)
 
+
+def generate_new_data(
+        transitions: List[Transition], fn: Callable, args: Dict
+    ) -> Optional[List[Transition]]:
+    return [fn(trans, **args) for trans in transitions]
 
 def clean(transition: Transition) -> Transition:
     return transition
