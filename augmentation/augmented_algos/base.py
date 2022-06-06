@@ -42,7 +42,7 @@ def custom_augmented_fitter(
     if not hasattr(cls, "augmentations"):
         LOG.debug("'augmentations' class field ot set. Defaulting to only clean")
         cls.augmentations = []
-    cls.augmentations.append(("clean", {}))
+    #cls.augmentations.append(("clean", {}))
     transitions = []
     if isinstance(dataset, MDPDataset):
         for episode in dataset.episodes:
@@ -173,6 +173,23 @@ def custom_augmented_fitter(
 
         iterator.reset()
 
+        #######################################################################
+        #Generate new transitions with augumentations
+        new_transitions = []
+        for fn, args in augmentation_functions:
+            new_transitions.append(
+                augmentation.synth.generate_new_data(iterator.transitions, fn, args)
+            )
+            
+        if new_transitions:
+            flat_list_transitions = [x for xs in new_transitions for x in xs]  #flatten list
+            iterator.add_generated_transitions(flat_list_transitions)
+            LOG.debug(
+                f"{len(flat_list_transitions)} transitions are augmented.",
+                real_transitions=len(iterator.transitions),
+                fake_transitions=len(iterator.generated_transitions),
+            )
+        #######################################################################
         for itr in range_gen:
             
             # generate new transitions with dynamics models
@@ -187,23 +204,7 @@ def custom_augmented_fitter(
                     fake_transitions=len(iterator.generated_transitions),
                 )
 
-            #######################################################################
-            #Generate new transitions with augumentations
-            new_transitions = []
-            for fn, args in augmentation_functions:
-                new_transitions.append(
-                    augmentation.synth.generate_new_data(iterator.transitions, fn, args)
-                )
-            
-            if new_transitions:
-                iterator.add_generated_transitions(new_transitions)
-                LOG.debug(
-                    f"{len(new_transitions)} transitions are augmented.",
-                    real_transitions=len(iterator.transitions),
-                    fake_transitions=len(iterator.generated_transitions),
-                )
-            #######################################################################
-
+        
             #generate 
 
             with logger.measure_time("step"):
