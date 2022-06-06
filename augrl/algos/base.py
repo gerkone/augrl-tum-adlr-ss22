@@ -1,5 +1,6 @@
 """Modified fitter method, ready for monkey patching the original algos"""
 
+import random
 from collections import defaultdict
 from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Union, cast
 
@@ -40,9 +41,9 @@ def custom_augmented_fitter(
     """Iterate over epochs steps to train with the given dataset, with augmentation"""
     # check augmentations
     if not hasattr(cls, "augmentations"):
-        LOG.debug("'augmentations' class field ot set. Defaulting to only clean")
+        if verbose:
+            LOG.debug("'augmentations' class field ot set. Defaulting to only clean")
         cls.augmentations = []
-    # cls.augmentations.append(("clean", {}))
     transitions = []
     if isinstance(dataset, MDPDataset):
         for episode in dataset.episodes:
@@ -83,7 +84,8 @@ def custom_augmented_fitter(
             real_ratio=cls._real_ratio,
             generated_maxlen=cls._generated_maxlen,
         )
-        LOG.debug("RandomIterator is selected.")
+        if verbose:
+            LOG.debug("RandomIterator is selected.")
     elif n_epochs is not None and n_steps is None:
         iterator = RoundIterator(
             transitions,
@@ -95,7 +97,8 @@ def custom_augmented_fitter(
             generated_maxlen=cls._generated_maxlen,
             shuffle=shuffle,
         )
-        LOG.debug("RoundIterator is selected.")
+        if verbose:
+            LOG.debug("RoundIterator is selected.")
     else:
         raise ValueError("Either of n_epochs or n_steps must be given.")
 
@@ -114,49 +117,53 @@ def custom_augmented_fitter(
 
     # initialize scaler
     if cls._scaler:
-        LOG.debug("Fitting scaler...", scaler=cls._scaler.get_type())
+        if verbose:
+            LOG.debug("Fitting scaler...", scaler=cls._scaler.get_type())
         cls._scaler.fit(transitions)
 
     # initialize action scaler
     if cls._action_scaler:
-        LOG.debug(
-            "Fitting action scaler...",
-            action_scaler=cls._action_scaler.get_type(),
-        )
+        if verbose:
+            LOG.debug(
+                "Fitting action scaler...",
+                action_scaler=cls._action_scaler.get_type(),
+            )
         cls._action_scaler.fit(transitions)
 
     # initialize reward scaler
     if cls._reward_scaler:
-        LOG.debug(
-            "Fitting reward scaler...",
-            reward_scaler=cls._reward_scaler.get_type(),
-        )
+        if verbose:
+            LOG.debug(
+                "Fitting reward scaler...",
+                reward_scaler=cls._reward_scaler.get_type(),
+            )
         cls._reward_scaler.fit(transitions)
 
     # instantiate implementation
     if cls._impl is None:
-        LOG.debug("Building models...")
+        if verbose:
+            LOG.debug("Building models...")
         transition = iterator.transitions[0]
         action_size = transition.get_action_size()
         observation_shape = tuple(transition.get_observation_shape())
         cls.create_impl(cls._process_observation_shape(observation_shape), action_size)
-        LOG.debug("Models have been built.")
+        if verbose:
+            LOG.debug("Models have been built.")
     else:
         LOG.warning("Skip building models since they're already built.")
 
     # save hyperparameters
     cls.save_params(logger)
-
     # refresh evaluation metrics
     cls._eval_results = defaultdict(list)
-
     # refresh loss history
     cls._loss_history = defaultdict(list)
-
     # selected augmentation functions
     augmentation_functions = [
         (getattr(augrl.augmentations.synth, fn), args) for fn, args in cls.augmentations
     ]
+
+    transitions_ = iterator.transitions.copy()
 
     # training loop
     total_step = 0
@@ -173,22 +180,17 @@ def custom_augmented_fitter(
 
         iterator.reset()
 
-        # Generate new transitions with augumentations
-        new_transitions = []
-        for fn, args in augmentation_functions:
-            new_transitions.extend(
-                augrl.augmentations.synth.generate_new_data(
-                    iterator.transitions, fn, args
-                )
-            )
-
+        new_transitions = _augment(
+            augmentation_functions, transitions_, cls._generated_maxlen
+        )
         if new_transitions:
             iterator.add_generated_transitions(new_transitions)
-            LOG.debug(
-                f"{len(new_transitions)} transitions are augmented.",
-                real_transitions=len(iterator.transitions),
-                fake_transitions=len(iterator.generated_transitions),
-            )
+            if verbose:
+                LOG.debug(
+                    f"{len(new_transitions)} transitions are augmented.",
+                    real_transitions=len(iterator.transitions),
+                    fake_transitions=len(iterator.generated_transitions),
+                )
         for itr in range_gen:
             with logger.measure_time("step"):
                 # pick transitions
@@ -238,3 +240,23 @@ def custom_augmented_fitter(
     # logger
     cls._active_logger.close()
     cls._active_logger = None
+
+
+def _augment(
+    augmentation_functions: List[Tuple[Callable, Dict]],
+    transitions: List[Transition],
+    maxlen: int,
+):
+    """Generate new transitions with augumentations"""
+    new_transitions = []
+    n_augmentable = np.min([len(transitions), maxlen]) // len(augmentation_functions)
+    random.shuffle(transitions)
+    augmentable_portions = [
+        transitions[i * n_augmentable : (i + 1) * n_augmentable]
+        for i in range(len(augmentation_functions))
+    ]
+    for (fn, args), transitions_i in zip(augmentation_functions, augmentable_portions):
+        new_transitions.extend(
+            augrl.augmentations.synth.generate_new_data(transitions_i, fn, args)
+        )
+    return new_transitions
