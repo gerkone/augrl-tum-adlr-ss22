@@ -16,9 +16,10 @@ def augmenter_wrapper(
 
 
 def generate_new_data(
-        transitions: List[Transition], fn: Callable, args: Dict
-    ) -> Optional[List[Transition]]:
+    transitions: List[Transition], fn: Callable, args: Dict
+) -> Optional[List[Transition]]:
     return [fn(trans, **args) for trans in transitions]
+
 
 def clean(transition: Transition) -> Transition:
     return transition

@@ -15,7 +15,7 @@ from d3rlpy.iterators import RandomIterator, RoundIterator, TransitionIterator
 from d3rlpy.logger import LOG
 from tqdm import tqdm
 
-import augmentation.synth
+import augrl.augmentations.synth
 
 
 def custom_augmented_fitter(
@@ -42,7 +42,7 @@ def custom_augmented_fitter(
     if not hasattr(cls, "augmentations"):
         LOG.debug("'augmentations' class field ot set. Defaulting to only clean")
         cls.augmentations = []
-    #cls.augmentations.append(("clean", {}))
+    # cls.augmentations.append(("clean", {}))
     transitions = []
     if isinstance(dataset, MDPDataset):
         for episode in dataset.episodes:
@@ -155,7 +155,7 @@ def custom_augmented_fitter(
 
     # selected augmentation functions
     augmentation_functions = [
-        (getattr(augmentation.synth, fn), args) for fn, args in cls.augmentations
+        (getattr(augrl.augmentations.synth, fn), args) for fn, args in cls.augmentations
     ]
 
     # training loop
@@ -173,56 +173,29 @@ def custom_augmented_fitter(
 
         iterator.reset()
 
-        #######################################################################
-        #Generate new transitions with augumentations
+        # Generate new transitions with augumentations
         new_transitions = []
         for fn, args in augmentation_functions:
-            new_transitions.append(
-                augmentation.synth.generate_new_data(iterator.transitions, fn, args)
+            new_transitions.extend(
+                augrl.augmentations.synth.generate_new_data(
+                    iterator.transitions, fn, args
+                )
             )
-            
+
         if new_transitions:
-            flat_list_transitions = [x for xs in new_transitions for x in xs]  #flatten list
-            iterator.add_generated_transitions(flat_list_transitions)
+            iterator.add_generated_transitions(new_transitions)
             LOG.debug(
-                f"{len(flat_list_transitions)} transitions are augmented.",
+                f"{len(new_transitions)} transitions are augmented.",
                 real_transitions=len(iterator.transitions),
                 fake_transitions=len(iterator.generated_transitions),
             )
-        #######################################################################
         for itr in range_gen:
-            
-            # generate new transitions with dynamics models
-            new_transitions = cls.generate_new_data(
-                transitions=iterator.transitions,
-            )
-            if new_transitions:
-                iterator.add_generated_transitions(new_transitions)
-                LOG.debug(
-                    f"{len(new_transitions)} transitions are generated.",
-                    real_transitions=len(iterator.transitions),
-                    fake_transitions=len(iterator.generated_transitions),
-                )
-
-        
-            #generate 
-
             with logger.measure_time("step"):
                 # pick transitions
                 with logger.measure_time("sample_batch"):
-                    clean_batch = next(iterator)
+                    batch = next(iterator)
 
                 with logger.measure_time("algorithm_update"):
-                    batch = clean_batch
-                    
-
-                    """
-                    for fn, args in augmentation_functions:
-                        # augment on batch
-                        batch = augmentation.synth.augmenter_wrapper(
-                            fn, clean_batch, args
-                        )
-                    """
                     # update parameters
                     loss = cls.update(batch)
 
