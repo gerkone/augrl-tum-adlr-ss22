@@ -248,7 +248,7 @@ def _augment(
     maxlen: int,
 ):
     """Generate new transitions with augumentations"""
-    new_transitions = []
+    new_transitions: List[Transition] = []
     n_augmentable = np.min([len(transitions), maxlen]) // len(augmentation_functions)
     random.shuffle(transitions)
     augmentable_portions = [
