@@ -3,6 +3,6 @@ __pycache__/
 d3rlpy_data/
 d3rlpy_logs/
 results/*
-!results/cloud_results_31052022.parquet
+!results/cloud_results_*
 experiments/.ipynb_checkpoints/
 nohup.out
