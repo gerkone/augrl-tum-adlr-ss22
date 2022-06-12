@@ -1,7 +1,8 @@
-from typing import Tuple
+from typing import Union
 
 import numpy as np
 from d3rlpy.dataset import MDPDataset
+from d3rlpy.preprocessing.scalers import Scaler
 
 
 def trim(dataset: MDPDataset, ratio: float) -> MDPDataset:
@@ -21,19 +22,13 @@ def trim(dataset: MDPDataset, ratio: float) -> MDPDataset:
     return dataset
 
 
-def normalize(dataset: MDPDataset) -> Tuple[MDPDataset, np.ndarray, np.ndarray]:
-    min_obs = dataset.observations.min(0)
-    max_obs = dataset.observations.max(0)
-    ptp_obs = max_obs - min_obs
-    norm_observations = (dataset.observations - min_obs) / ptp_obs
-    return (
-        MDPDataset(
-            norm_observations,
-            dataset.actions,
-            dataset.rewards,
-            dataset.terminals,
-            dataset.episode_terminals,
-        ),
-        min_obs,
-        max_obs,
-    )
+def get_scaling_factor(scaler: Scaler) -> Union[np.ndarray, float]:
+    if scaler is None:
+        return 1.0
+    if scaler.get_type() == "min_max":
+        params = scaler.get_params()
+        return params["maximum"] - params["minimum"]
+    if scaler.get_type() == "standard":
+        params = scaler.get_params()
+        return params["std"]
+    return 1.0

@@ -14,9 +14,11 @@ from d3rlpy.constants import (
 from d3rlpy.dataset import Episode, MDPDataset, Transition
 from d3rlpy.iterators import RandomIterator, RoundIterator, TransitionIterator
 from d3rlpy.logger import LOG
+from d3rlpy.preprocessing.scalers import Scaler
 from tqdm import tqdm
 
-import augrl.augmentations.synth
+from augrl import utils
+from augrl.augmentations import synth
 
 
 def custom_augmented_fitter(
@@ -159,7 +161,7 @@ def custom_augmented_fitter(
     cls._loss_history = defaultdict(list)
     # selected augmentation functions
     augmentation_functions = [
-        (getattr(augrl.augmentations.synth, fn), args) for fn, args in cls.augmentations
+        (getattr(synth, fn), args) for fn, args in cls.augmentations
     ]
 
     transitions_ = iterator.transitions.copy()
@@ -180,7 +182,7 @@ def custom_augmented_fitter(
         iterator.reset()
 
         new_transitions = _augment(
-            augmentation_functions, transitions_, cls._generated_maxlen
+            augmentation_functions, transitions_, cls._generated_maxlen, cls._scaler
         )
         if new_transitions:
             iterator.add_generated_transitions(new_transitions)
@@ -245,6 +247,7 @@ def _augment(
     augmentation_functions: List[Tuple[Callable, Dict]],
     transitions: List[Transition],
     maxlen: int,
+    scaler: Scaler,
 ):
     """Generate new transitions with augumentations"""
     new_transitions: List[Transition] = []
@@ -256,6 +259,8 @@ def _augment(
     ]
     for (fn, args), transitions_i in zip(augmentation_functions, augmentable_portions):
         new_transitions.extend(
-            augrl.augmentations.synth.generate_new_data(transitions_i, fn, args)
+            synth.generate_new_data(
+                transitions_i, fn, utils.get_scaling_factor(scaler), args
+            )
         )
     return new_transitions
