@@ -57,7 +57,6 @@ def custom_augmented_fitter(
         transitions = list(cast(List[Transition], dataset))
     else:
         raise ValueError(f"invalid dataset type: {type(dataset)}")
-
     # check action space
     if cls.get_action_type() == ActionSpace.BOTH:
         pass
