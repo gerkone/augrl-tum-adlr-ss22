@@ -11,6 +11,7 @@ from d3rlpy.metrics.scorer import (
     initial_state_value_estimation_scorer,
     td_error_scorer,
 )
+from d3rlpy.preprocessing import MinMaxScaler
 
 from augrl import utils
 from augrl.algos import AugmentedBCQ
@@ -19,12 +20,12 @@ os.environ["D4RL_SUPPRESS_IMPORT_ERROR"] = "1"
 
 USE_GPU = False
 REAL_RATIO = 0.5
-STEPS_PER_EPOCH = 10
+STEPS_PER_EPOCH = 2000
 AUGMENTATIONS = [("gaussian", {"sigma": 1e-3}), ("mixup", {"eps": 0.4})]
 ENVS = [
-    # {"name": "cartpole-replay", "discrete": True, "batches": 60},
+    # {"name": "cartpole-replay", "discrete": True, "batches": 10},
     # {"name": "pen-cloned-v0", "discrete": False, "batches": 50},
-    {"name": "halfcheetah-medium-replay-v2", "discrete": False, "batches": 10},
+    {"name": "halfcheetah-medium-replay-v2", "discrete": False, "batches": int(1e5)},
     # {"name": "hopper-medium-replay-v0", "discrete": False, "batches": 40},
 ]
 ALGOS_C = [
@@ -85,7 +86,10 @@ def run():
                 full_dataset, env = d3rlpy.datasets.get_d4rl(env_item["name"])
             except ValueError:
                 continue
-        # full_dataset = utils.normalize(full_dataset)
+        # need to normalize manually first, then also have a scaler
+        # otherwise additive noise would get scaled too
+        full_dataset, min_obs, max_obs = utils.normalize(full_dataset)
+        scaler = MinMaxScaler(minimum=min_obs, maximum=max_obs)
         try_algos = ALGOS_D if env_item["discrete"] else ALGOS_C
         for algo_item in try_algos:
             d3rlpy.seed(1337)
@@ -99,6 +103,7 @@ def run():
                     use_gpu=USE_GPU,
                     augmentations=AUGMENTATIONS,
                     real_ratio=REAL_RATIO,
+                    scaler=scaler,
                     **config
                 )
                 agent.generated_maxlen = len(dataset.observations)
@@ -111,7 +116,7 @@ def run():
                         algo_item["scorers"]
                         | {
                             "environment_reward": evaluate_on_environment(
-                                env, n_trials=1
+                                env, n_trials=15
                             )
                         }
                     ),
@@ -121,7 +126,6 @@ def run():
                         env_item["name"], algo.__name__, env_item["batches"]
                     ),
                 )
-                metrics = [(0, {})]
                 # easy pandasify
                 for epoch, metric in metrics:
                     results.append(

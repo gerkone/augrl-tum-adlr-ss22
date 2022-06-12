@@ -23,8 +23,9 @@ def trim(dataset: MDPDataset, ratio: float) -> MDPDataset:
 
 def normalize(dataset: MDPDataset) -> Tuple[MDPDataset, np.ndarray, np.ndarray]:
     min_obs = dataset.observations.min(0)
-    ptp_obs = dataset.observations.ptp(0)
-    norm_observations = (dataset.observations - min_obs) / dataset.observations.ptp(0)
+    max_obs = dataset.observations.max(0)
+    ptp_obs = max_obs - min_obs
+    norm_observations = (dataset.observations - min_obs) / ptp_obs
     return (
         MDPDataset(
             norm_observations,
@@ -34,5 +35,5 @@ def normalize(dataset: MDPDataset) -> Tuple[MDPDataset, np.ndarray, np.ndarray]:
             dataset.episode_terminals,
         ),
         min_obs,
-        ptp_obs,
+        max_obs,
     )
