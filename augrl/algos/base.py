@@ -159,10 +159,13 @@ def custom_augmented_fitter(
     cls._eval_results = defaultdict(list)
     # refresh loss history
     cls._loss_history = defaultdict(list)
+
     # selected augmentation functions
-    augmentation_functions = [
-        (getattr(synth, fn), args) for fn, args in cls.augmentations
-    ]
+    augmentation_functions = []
+    for fn, args in cls.augmentations:
+        if fn == "adversarial":
+            args["impl"] = cls._impl
+        augmentation_functions.append((getattr(synth, fn), args))
 
     transitions_ = iterator.transitions.copy()
 
@@ -257,10 +260,10 @@ def _augment(
         transitions[i * n_augmentable : (i + 1) * n_augmentable]
         for i in range(len(augmentation_functions))
     ]
-    for (fn, args), transitions_i in zip(augmentation_functions, augmentable_portions):
+    for (agmentation_fn, args), transitions_i in zip(
+        augmentation_functions, augmentable_portions
+    ):
         new_transitions.extend(
-            synth.generate_new_data(
-                transitions_i, fn, utils.get_scaling_factor(scaler), args
-            )
+            agmentation_fn(transitions_i, utils.get_scaling_factor(scaler), **args)
         )
     return new_transitions

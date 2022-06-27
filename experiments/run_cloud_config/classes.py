@@ -1,27 +1,23 @@
-from typing import Any, Dict, Type, Callable
+from typing import Callable, Dict, Type
 
 from d3rlpy.algos.awac import AWAC
 from d3rlpy.algos.base import AlgoBase
-from d3rlpy.algos .bc import BC, DiscreteBC
-from d3rlpy.algos .bcq import BCQ, DiscreteBCQ
-from d3rlpy.algos .bear import BEAR
-from d3rlpy.algos .combo import COMBO
-from d3rlpy.algos .cql import CQL, DiscreteCQL
-from d3rlpy.algos .crr import CRR
-from d3rlpy.algos .ddpg import DDPG
-from d3rlpy.algos .dqn import DQN, DoubleDQN
-from d3rlpy.algos .iql import IQL
-from d3rlpy.algos .mopo import MOPO
-from d3rlpy.algos .nfq import NFQ
-from d3rlpy.algos .plas import PLAS, PLASWithPerturbation
-from d3rlpy.algos .random_policy import DiscreteRandomPolicy, RandomPolicy
-from d3rlpy.algos .sac import SAC, DiscreteSAC
-from d3rlpy.algos .td3 import TD3
-from d3rlpy.algos .td3_plus_bc import TD3PlusBC
-
-from augrl.algos import AugmentedBEAR, AugmentedBCQ, AugmentedCQL, AugmentedBC
-from augrl.algos import AugmentedDiscreteBCQ, AugmentedDiscreteCQL, AugmentedDiscreteBC
-
+from d3rlpy.algos.bc import BC, DiscreteBC
+from d3rlpy.algos.bcq import BCQ, DiscreteBCQ
+from d3rlpy.algos.bear import BEAR
+from d3rlpy.algos.combo import COMBO
+from d3rlpy.algos.cql import CQL, DiscreteCQL
+from d3rlpy.algos.crr import CRR
+from d3rlpy.algos.ddpg import DDPG
+from d3rlpy.algos.dqn import DQN, DoubleDQN
+from d3rlpy.algos.iql import IQL
+from d3rlpy.algos.mopo import MOPO
+from d3rlpy.algos.nfq import NFQ
+from d3rlpy.algos.plas import PLASWithPerturbation
+from d3rlpy.algos.random_policy import DiscreteRandomPolicy, RandomPolicy
+from d3rlpy.algos.sac import SAC, DiscreteSAC
+from d3rlpy.algos.td3 import TD3
+from d3rlpy.algos.td3_plus_bc import TD3PlusBC
 from d3rlpy.metrics.scorer import (
     average_value_estimation_scorer,
     continuous_action_diff_scorer,
@@ -37,6 +33,16 @@ from d3rlpy.metrics.scorer import (
     value_estimation_std_scorer,
 )
 
+from augrl.algos import (
+    AugmentedBC,
+    AugmentedBCQ,
+    AugmentedBEAR,
+    AugmentedCQL,
+    AugmentedDiscreteBC,
+    AugmentedDiscreteBCQ,
+    AugmentedDiscreteCQL,
+)
+
 DISCRETE_ALGORITHMS: Dict[str, Type[AlgoBase]] = {
     "bc": DiscreteBC,
     "bcq": DiscreteBCQ,
@@ -46,10 +52,9 @@ DISCRETE_ALGORITHMS: Dict[str, Type[AlgoBase]] = {
     "nfq": NFQ,
     "sac": DiscreteSAC,
     "random": DiscreteRandomPolicy,
-
     "AugmentedDiscreteBCQ": AugmentedDiscreteBCQ,
     "AugmentedDiscreteCQL": AugmentedDiscreteCQL,
-    "AugmentedDiscreteBC": AugmentedDiscreteBC
+    "AugmentedDiscreteBC": AugmentedDiscreteBC,
 }
 
 CONTINUOUS_ALGORITHMS: Dict[str, Type[AlgoBase]] = {
@@ -68,11 +73,10 @@ CONTINUOUS_ALGORITHMS: Dict[str, Type[AlgoBase]] = {
     "td3": TD3,
     "td3_plus_bc": TD3PlusBC,
     "random": RandomPolicy,
-
     "AugmentedBCQ": AugmentedBCQ,
     "AugmentedBEAR": AugmentedBEAR,
     "AugmentedCQL": AugmentedCQL,
-    "AugmentedBC": AugmentedBC
+    "AugmentedBC": AugmentedBC,
 }
 
 SCORERS: Dict[str, Type[Callable]] = {
@@ -87,9 +91,8 @@ SCORERS: Dict[str, Type[Callable]] = {
     "initial_state_value_estimation_scorer": initial_state_value_estimation_scorer,
     "soft_opc_scorer": soft_opc_scorer,
     "td_error_scorer": td_error_scorer,
-    "value_estimation_std_scorer": value_estimation_std_scorer
+    "value_estimation_std_scorer": value_estimation_std_scorer,
 }
-
 
 
 def get_algo(name: str, discrete: bool) -> Type[AlgoBase]:
@@ -111,5 +114,6 @@ def get_algo(name: str, discrete: bool) -> Type[AlgoBase]:
         return CONTINUOUS_ALGORITHMS[name]
     raise ValueError(f"{name} does not support continuous action-space.")
 
+
 def get_scorers(names: list[str]) -> dict[str, Type[Callable]]:
-    return {k:v for k,v in SCORERS.items() if k in names}
+    return {k: v for k, v in SCORERS.items() if k in names}
