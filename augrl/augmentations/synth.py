@@ -8,6 +8,10 @@ import numpy as np
 from d3rlpy.algos.torch.base import TorchImplBase
 from d3rlpy.dataset import Transition
 from d3rlpy.iterators import RandomIterator
+from d3rlpy.models.torch.q_functions.ensemble_q_function import (
+    EnsembleContinuousQFunction,
+    EnsembleDiscreteQFunction,
+)
 from d3rlpy.torch_utility import TorchMiniBatch
 
 
@@ -90,16 +94,27 @@ def adversarial(
         state_size: Tuple,
         action_size: Tuple,
     ) -> List[Transition]:
+        impl.q_function.requires_grad_(False)
         batch.observations.requires_grad = True
         # single-step projected gradient attack (PGD)
-        q_tpn = impl.compute_target(batch)
-        loss = impl.compute_loss(fake_batch, q_tpn)
-        loss.backward()
+        if isinstance(impl.q_function, EnsembleContinuousQFunction):
+            q_val = impl.q_function(
+                batch.observations, impl._predict_best_action(batch.observations)
+            )
+        if isinstance(impl.q_function, EnsembleDiscreteQFunction):
+            q_val = impl.q_function(batch.observations).max(axis=-1).values
+
+        # each batch dimension only accounts for one direction of the resulting gradient
+        q_val = q_val.sum()
+
+        q_val.backward()
+
         obs_grad = batch.observations.grad
         batch.observations.requires_grad = False
+        impl.q_function.requires_grad_(True)
 
         if norm == "inf":
-            # FGSM
+            # FSGM
             augmented_observations = batch.observations + eps * obs_grad.sign()
 
         else:
@@ -133,8 +148,10 @@ def adversarial(
 
     # scaling not needed for adversarial
     _ = scaling
-    if impl is None or not (
-        hasattr(impl, "compute_target") and hasattr(impl, "compute_loss")
+    if (
+        impl is None
+        or not isinstance(impl, TorchImplBase)
+        or not (hasattr(impl, "q_function"))
     ):
         raise ValueError(
             "Trying to perform adversarial augmentation without a valid implementation"
