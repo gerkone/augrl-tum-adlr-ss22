@@ -2,7 +2,7 @@ import argparse
 import datetime
 import os
 import traceback
-from typing import Dict
+from typing import Dict, List
 
 import d3rlpy
 import pandas as pd
@@ -13,7 +13,7 @@ from augrl import utils
 os.environ["D4RL_SUPPRESS_IMPORT_ERROR"] = "1"
 
 
-def run(config: Dict):
+def run(config: Dict) -> List:
     thrown_errors = []
     results = []
     d3rlpy.seed(config["seed"])
@@ -118,4 +118,8 @@ if __name__ == "__main__":
             config = yaml.safe_load(file)
         except yaml.YAMLError as exc:
             print(exc)
-    run(config)
+    errors = run(config)
+    for e in errors:
+        print(e)
+    if len(errors) == 0:
+        print("ALL DONE!")
