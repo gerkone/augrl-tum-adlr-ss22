@@ -162,7 +162,7 @@ def custom_augmented_fitter(
 
     # selected augmentation functions
     augmentation_functions = []
-    for fn, args in cls.augmentations:
+    for fn, args in cls.augmentations.items():
         if fn == "adversarial":
             args["impl"] = cls._impl
         augmentation_functions.append((getattr(synth, fn), args))

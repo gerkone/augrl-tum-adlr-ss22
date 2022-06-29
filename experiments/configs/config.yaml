@@ -1,54 +1,61 @@
 ---
-use_gpu: no
-"seed": 54
-algorithms_D:
-  - algo_class: bcq
-    data_ratio: 0.5
-    scorers:
-      - td_error_scorer
-      - average_value_estimation_scorer
-      - discounted_sum_of_advantage_scorer
-      - initial_state_value_estimation_scorer
-  - algo_class: bcq
-    data_ratio: 0.5
-    scorers:
-      - td_error_scorer
-      - average_value_estimation_scorer
-      - discounted_sum_of_advantage_scorer
-      - initial_state_value_estimation_scorer
-  - algo_class: bcq
-    data_ratio: 1.0
-    scorers:
-      - td_error_scorer
-      - average_value_estimation_scorer
-      - discounted_sum_of_advantage_scorer
-      - initial_state_value_estimation_scorer
+# misc
+cuda: yes
+seed: 54
+steps_per_epoch: 5000
+real_ratio: 0.5
+env_evaluation_trials: 5
+scaler: min_max
+verbose: yes
+show_progress: yes
 
-algorithms_C:
-  - algo_class: cql
-    data_ratio: 0.5
+algorithms_discrete:
+  - name: bcq
+    data_ratio: [0.1, 0.3, 0.5, 1.0]
     scorers:
       - td_error_scorer
       - average_value_estimation_scorer
       - discounted_sum_of_advantage_scorer
       - initial_state_value_estimation_scorer
+    args: {}
+  - name: augmentedbcq
+    data_ratio: [0.1, 0.3, 0.5, 1.0]
+    scorers:
+      - td_error_scorer
+      - average_value_estimation_scorer
+      - discounted_sum_of_advantage_scorer
+      - initial_state_value_estimation_scorer
+    args: {}
 
-
+algorithms_continuous:
+  - name: bcq
+    data_ratio: [0.1, 0.3, 0.5, 1.0]
+    scorers:
+      - td_error_scorer
+      - average_value_estimation_scorer
+      - discounted_sum_of_advantage_scorer
+      - initial_state_value_estimation_scorer
+    args: {}
+  - name: augmentedbcq
+    data_ratio: [0.1, 0.3, 0.5, 1.0]
+    scorers:
+      - td_error_scorer
+      - average_value_estimation_scorer
+      - discounted_sum_of_advantage_scorer
+      - initial_state_value_estimation_scorer
+    args: {}
 
 environments:
-  - name: cartpole-replay
-    batches: 10000
-    discrete: yes
+  - name: pen-cloned-v0
+    batches: 300000
+    discrete: no
 
 augmentations:
-  - gaussian:
-      sigma: 1.0e-3
-  - mixup:
-      eps: 0.4
-
-steps_per_epoch: 1200
-
-real_ratios:
-  - 0.5
-
-algo_config:
+  adversarial:
+    norm: 2
+    eps: 0.4
+    impl:
+  gaussian:
+    sigma: 1.0e-3
+  mixup:
+    eps: 0.4

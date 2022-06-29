@@ -187,5 +187,4 @@ def adversarial(
                 action_size=action_size,
             )
         )
-
     return augmented_transitions

@@ -1,8 +1,11 @@
-from typing import Union
+from typing import Dict, Union
 
+import d3rlpy.algos
 import numpy as np
 from d3rlpy.dataset import MDPDataset
 from d3rlpy.preprocessing.scalers import Scaler
+
+import augrl.algos
 
 
 def trim(dataset: MDPDataset, ratio: float) -> MDPDataset:
@@ -32,3 +35,14 @@ def get_scaling_factor(scaler: Scaler) -> Union[np.ndarray, float]:
         params = scaler.get_params()
         return params["std"]
     return 1.0
+
+
+def merge_dicts(d1: Dict, d2: Dict) -> Dict:
+    return {**d1, **d2}
+
+
+def get_algo(name: str, discrete: bool) -> d3rlpy.algos.AlgoBase:
+    try:
+        return d3rlpy.algos.get_algo(name, discrete)
+    except ValueError:
+        return augrl.algos.get_algo(name, discrete)
