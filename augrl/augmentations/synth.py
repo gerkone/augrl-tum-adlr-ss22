@@ -124,11 +124,11 @@ def adversarial(
                 * obs_grad
                 / obs_grad.flatten(1, -1).norm(p=int(norm), dim=-1).view(-1, 1, 1, 1)
             )
-        np_augmented_observations = augmented_observations.numpy()
-        np_actions = batch.actions.numpy()
-        np_rewards = batch.rewards.numpy()
-        np_next_observations = batch.next_observations.numpy()
-        np_terminals = batch.terminals.numpy()
+        np_augmented_observations = augmented_observations.detach().cpu().numpy()
+        np_actions = batch.actions.detach().cpu().numpy()
+        np_rewards = batch.rewards.detach().cpu().numpy()
+        np_next_observations = batch.next_observations.detach().cpu().numpy()
+        np_terminals = batch.terminals.detach().cpu().numpy()
         del batch
         del augmented_observations
         # fill transition list iterating over elements of the batch
