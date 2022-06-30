@@ -1,3 +1,4 @@
+import copy
 from typing import Dict, List, Tuple
 
 import d3rlpy
@@ -15,7 +16,9 @@ class AugmentedBEAR(d3rlpy.algos.BEAR):
         augmentations: List[Tuple[str, Dict]] = None,
         **kwargs
     ):
-        self.augmentations = augmentations.copy() if augmentations is not None else []
+        self.augmentations = (
+            copy.deepcopy(augmentations) if augmentations is not None else []
+        )
         self._real_ratio = real_ratio
         # monkey patching of original fitter method
         self.fitter = custom_augmented_fitter.__get__(self, AugmentedBEAR)
@@ -38,7 +41,9 @@ class AugmentedBCQ(d3rlpy.algos.BCQ):
         augmentations: List[Tuple[str, Dict]] = None,
         **kwargs
     ):
-        self.augmentations = augmentations.copy() if augmentations is not None else []
+        self.augmentations = (
+            copy.deepcopy(augmentations) if augmentations is not None else []
+        )
         self._real_ratio = real_ratio
         # monkey patching of original fitter method
         self.fitter = custom_augmented_fitter.__get__(self, AugmentedBCQ)
@@ -61,7 +66,9 @@ class AugmentedDiscreteBCQ(d3rlpy.algos.DiscreteBCQ):
         augmentations: List[Tuple[str, Dict]] = None,
         **kwargs
     ):
-        self.augmentations = augmentations.copy() if augmentations is not None else []
+        self.augmentations = (
+            copy.deepcopy(augmentations) if augmentations is not None else []
+        )
         self._real_ratio = real_ratio
         # monkey patching of original fitter method
         self.fitter = custom_augmented_fitter.__get__(self, AugmentedDiscreteBCQ)
@@ -84,7 +91,9 @@ class AugmentedCQL(d3rlpy.algos.CQL):
         augmentations: List[Tuple[str, Dict]] = None,
         **kwargs
     ):
-        self.augmentations = augmentations.copy() if augmentations is not None else []
+        self.augmentations = (
+            copy.deepcopy(augmentations) if augmentations is not None else []
+        )
         self._real_ratio = real_ratio
         # monkey patching of original fitter method
         self.fitter = custom_augmented_fitter.__get__(self, AugmentedCQL)
@@ -107,7 +116,9 @@ class AugmentedDiscreteCQL(d3rlpy.algos.DiscreteCQL):
         augmentations: List[Tuple[str, Dict]] = None,
         **kwargs
     ):
-        self.augmentations = augmentations.copy() if augmentations is not None else []
+        self.augmentations = (
+            copy.deepcopy(augmentations) if augmentations is not None else []
+        )
         self._real_ratio = real_ratio
         # monkey patching of original fitter method
         self.fitter = custom_augmented_fitter.__get__(self, AugmentedDiscreteCQL)
@@ -130,7 +141,9 @@ class AugmentedBC(d3rlpy.algos.BC):
         augmentations: List[Tuple[str, Dict]] = None,
         **kwargs
     ):
-        self.augmentations = augmentations.copy() if augmentations is not None else []
+        self.augmentations = (
+            copy.deepcopy(augmentations) if augmentations is not None else []
+        )
         self._real_ratio = real_ratio
         # monkey patching of original fitter method
         self.fitter = custom_augmented_fitter.__get__(self, AugmentedBC)
@@ -153,7 +166,9 @@ class AugmentedDiscreteBC(d3rlpy.algos.DiscreteBC):
         augmentations: List[Tuple[str, Dict]] = None,
         **kwargs
     ):
-        self.augmentations = augmentations.copy() if augmentations is not None else []
+        self.augmentations = (
+            copy.deepcopy(augmentations) if augmentations is not None else []
+        )
         self._real_ratio = real_ratio
         # monkey patching of original fitter method
         self.fitter = custom_augmented_fitter.__get__(self, AugmentedDiscreteBC)

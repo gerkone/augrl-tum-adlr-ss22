@@ -1,6 +1,7 @@
 import argparse
 import datetime
 import os
+import sys
 import traceback
 from typing import Dict, List
 
@@ -68,8 +69,11 @@ def run(config: Dict) -> List:
                         ),
                         verbose=config["verbose"],
                         show_progress=config["show_progress"],
-                        experiment_name="{}_{}_{}".format(
-                            env_item["name"], algo.__name__, env_item["batches"]
+                        experiment_name="{}_{}_{}_{}".format(
+                            data_ratio,
+                            env_item["name"],
+                            algo.__name__,
+                            env_item["batches"],
                         ),
                     )
                     # easy pandasify
@@ -97,7 +101,7 @@ def run(config: Dict) -> List:
                         env_item["name"],
                         traceback.format_exc(),
                     )
-                    print(error)
+                    print(error, file=sys.stderr)
                     thrown_errors.append(error)
     return thrown_errors
 
