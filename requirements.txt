@@ -1,6 +1,7 @@
-d3rlpy>=1.1.0
+cython
+d3rlpy
 gym
-numpy>=1.22.3
+numpy
 pandas
 pygame
 seaborn
