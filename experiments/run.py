@@ -41,10 +41,6 @@ def run(config: Dict) -> List:
         )
         for algo_item in experiment_algos:
             for data_ratio in algo_item["data_ratio"]:
-                try:
-                    env.reset(seed=config["seed"])
-                except TypeError:
-                    print("Could not set seed for {}".format(env_item["name"]))
                 algo = utils.get_algo(algo_item["name"], env_item["discrete"])
                 try:
                     dataset = utils.trim(full_dataset, data_ratio)

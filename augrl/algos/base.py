@@ -42,10 +42,12 @@ def custom_augmented_fitter(
 ) -> Generator[Tuple[int, Dict[str, float]], None, None]:
     """Iterate over epochs steps to train with the given dataset, with augmentation"""
     # check augmentations
-    if not hasattr(cls, "augmentations"):
+    do_augmentations = True
+    if not hasattr(cls, "augmentations") or len(cls.augmentations) == 0:
         if verbose:
-            LOG.debug("'augmentations' class field ot set. Defaulting to only clean")
-        cls.augmentations = []
+            LOG.debug("'augmentations' class field not set. No augmentations will be used.")
+        cls.augmentations = {}
+        do_augmentations = False
     transitions = []
     if isinstance(dataset, MDPDataset):
         for episode in dataset.episodes:
@@ -161,40 +163,40 @@ def custom_augmented_fitter(
     cls._loss_history = defaultdict(list)
 
     # selected augmentation functions
-    augmentation_functions = []
-    for fn, args in cls.augmentations.items():
-        if fn == "adversarial":
-            args["impl"] = cls._impl
-        augmentation_functions.append((getattr(synth, fn), args))
+    if do_augmentations:
+        augmentation_functions = []
+        for fn, args in cls.augmentations.items():
+            if fn == "adversarial":
+                args["impl"] = cls._impl
+            augmentation_functions.append((getattr(synth, fn), args))
 
     transitions_ = iterator.transitions.copy()
 
     # training loop
     total_step = 0
     for epoch in range(1, n_epochs + 1):
-
         # dict to add incremental mean losses to epoch
         epoch_loss = defaultdict(list)
 
+        iterator.reset()
+        if do_augmentations:
+            new_transitions = _augment(
+                augmentation_functions, transitions_, cls._generated_maxlen, cls._scaler, cls.limits
+            )
+            if new_transitions:
+                iterator.add_generated_transitions(new_transitions)
+                if verbose:
+                    LOG.debug(
+                        f"{len(new_transitions)} transitions are augmented.",
+                        real_transitions=len(iterator.transitions),
+                        fake_transitions=len(iterator.generated_transitions),
+                    )
+        
         range_gen = tqdm(
             range(len(iterator)),
             disable=not show_progress,
             desc=f"Epoch {int(epoch)}/{n_epochs}",
         )
-
-        iterator.reset()
-
-        new_transitions = _augment(
-            augmentation_functions, transitions_, cls._generated_maxlen, cls._scaler, cls.limits
-        )
-        if new_transitions:
-            iterator.add_generated_transitions(new_transitions)
-            if verbose:
-                LOG.debug(
-                    f"{len(new_transitions)} transitions are augmented.",
-                    real_transitions=len(iterator.transitions),
-                    fake_transitions=len(iterator.generated_transitions),
-                )
         for itr in range_gen:
             with logger.measure_time("step"):
                 # pick transitions
