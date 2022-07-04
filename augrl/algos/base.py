@@ -19,7 +19,7 @@ from tqdm import tqdm
 
 from augrl import utils
 from augrl.augmentations import synth
-
+import gym
 
 def custom_augmented_fitter(
     cls,
@@ -185,7 +185,7 @@ def custom_augmented_fitter(
         iterator.reset()
 
         new_transitions = _augment(
-            augmentation_functions, transitions_, cls._generated_maxlen, cls._scaler
+            augmentation_functions, transitions_, cls._generated_maxlen, cls._scaler, cls.limits
         )
         if new_transitions:
             iterator.add_generated_transitions(new_transitions)
@@ -251,6 +251,7 @@ def _augment(
     transitions: List[Transition],
     maxlen: int,
     scaler: Scaler,
+    limits: Dict[str, np.array],
 ):
     """Generate new transitions with augumentations"""
     new_transitions: List[Transition] = []
@@ -264,6 +265,6 @@ def _augment(
         augmentation_functions, augmentable_portions
     ):
         new_transitions.extend(
-            agmentation_fn(transitions_i, utils.get_scaling_factor(scaler), **args)
+            agmentation_fn(transitions_i, utils.get_scaling_factor(scaler), limits, **args)
         )
     return new_transitions

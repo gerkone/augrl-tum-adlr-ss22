@@ -27,6 +27,13 @@ def run(config: Dict) -> List:
                 full_dataset, env = d3rlpy.datasets.get_d4rl(env_item["name"])
             except ValueError:
                 continue
+        limits = {}
+        limits["obs_min"] = env.observation_space.low
+        limits["obs_max"] = env.observation_space.high
+        if not env_item["discrete"]:
+            limits["action_min"] = env.action_space.low
+            limits["action_max"] = env.action_space.high
+            
         experiment_algos = (
             config["algorithms_discrete"]
             if env_item["discrete"]
@@ -49,6 +56,7 @@ def run(config: Dict) -> List:
                         **algo_item["args"],
                     )
                     agent.generated_maxlen = len(dataset.observations)
+                    agent.limits = limits
                     metrics = agent.fit(
                         dataset=dataset,
                         eval_episodes=full_dataset,
@@ -61,8 +69,12 @@ def run(config: Dict) -> List:
                                     for name in algo_item["scorers"]
                                 },
                                 {
-                                    "environment_reward": d3rlpy.metrics.evaluate_on_environment(
-                                        env, n_trials=config["env_evaluation_trials"]
+                                    "environment_reward": utils.evaluate_on_environment(
+                                        env = env,
+                                        #discrete= env_item["discrete"],
+                                        n_trials=config["env_evaluation_trials"], 
+                                        #timeout = 5,
+                                        
                                     )
                                 },
                             )
