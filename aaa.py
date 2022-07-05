@@ -1,7 +1,7 @@
 import d3rlpy
 from augrl.utils import m_evaluate_on_environment
 from d3rlpy.metrics import evaluate_on_environment
-from augrl.algos import AugmentedBCQ
+from augrl.algos import AugmentedBCQ, AugmentedDiscreteBCQ
 from torch.multiprocessing import set_start_method
 import os
 import gym
@@ -25,10 +25,11 @@ if __name__ == "__main__":
         n_steps_per_epoch=5,
         scorers=
             {
-                "environment_reward": evaluate_on_environment(
+                "environment_reward": m_evaluate_on_environment(
                     env = env,
                     n_trials=21,
-                    
+                    timeout=30,
+                    discrete = False
                 )
             },
     )

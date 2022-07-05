@@ -1,11 +1,16 @@
 from locale import RADIXCHAR
+from sqlite3 import Time
 from subprocess import call
 from typing import Dict, Union, Callable, Any, List
 import functools
+from xml.dom.minidom import parseString
+from pexpect import ExceptionPexpect
 import torch.multiprocessing as tmp
 import sys
 import os
 from contextlib import contextmanager
+import time
+import timeout_decorator
 
 import d3rlpy.algos
 import numpy as np
@@ -57,29 +62,46 @@ def get_algo(name: str, discrete: bool) -> d3rlpy.algos.AlgoBase:
         return augrl.algos.get_algo(name, discrete)
 
 
-def _evaluate(algo: AlgoProtocol, env: gym.Env, epsilon: float):
-    observation = env.reset()
-    episode_reward = 0.0
-    while True:
-        if np.random.random() < epsilon:
-            action = env.action_space.sample()
-        else:
-            action = algo.predict([observation])[0]
-        observation, reward, done, _ = env.step(action)
-        episode_reward += reward
-        if done:
-            break
-    return episode_reward
 
 
+def _evaluate(algo: AlgoProtocol, env: gym.Env, epsilon: float, timeout: int, discrete: bool):
+    @timeout_decorator.timeout(timeout, use_signals = True, timeout_exception=TimeoutError)
+    def _fn():
+        observation = env.reset()
+        episode_reward = 0.0
+        while True:
+            if np.random.random() < epsilon:
+                action = env.action_space.sample()
+            else:
+                action = algo.predict([observation])[0]
+            
+            #clip actions
+            if not discrete:
+                action = np.clip(action, env.action_space.low, env.action_space.high)
+            if discrete and not (env.action_space.contains(action)):
+                continue
+                
+            observation, reward, done, _ = env.step(action)
+            episode_reward += reward
+            if done:
+                break
+        return episode_reward
+
+    try:
+        value = _fn()
+    except TimeoutError:
+        value = 0.0
+    return value
+    
 def m_evaluate_on_environment(
-    env: gym.Env, n_trials: int = 10, epsilon: float = 0.0, render: bool = False
+    env: gym.Env, discrete: bool, n_trials: int = 10, epsilon: float = 0.0, render: bool = False, timeout: int = 30
 ) -> Callable[..., float]:
 
     def scorer(algo: AlgoProtocol, *args: Any) -> float:
-        evaluate_fn = functools.partial(_evaluate, **{"env": env, "epsilon": epsilon})
+        evaluate_fn = functools.partial(_evaluate, **{"env": copy.deepcopy(env), "epsilon": epsilon, "timeout": timeout, "discrete": discrete})
         # hide subprocess output
         with open(os.devnull, 'w') as devnull:
+            
             # suppress stdout
             orig_stdout_fno = os.dup(sys.stdout.fileno())
             os.dup2(devnull.fileno(), 1)
@@ -93,7 +115,8 @@ def m_evaluate_on_environment(
             
             # restore
             os.dup2(orig_stdout_fno, 1)
-            os.dup2(orig_stderr_fno, 2)    
+            os.dup2(orig_stderr_fno, 2)   
+            
         return float(np.mean(episode_rewards))
     
     return scorer

@@ -67,9 +67,9 @@ def run(config: Dict) -> List:
                                 {
                                     "environment_reward": utils.evaluate_on_environment(
                                         env = env,
-                                        #discrete= env_item["discrete"],
+                                        discrete= env_item["discrete"],
                                         n_trials=config["env_evaluation_trials"], 
-                                        #timeout = 5,
+                                        timeout = 30,
                                         
                                     )
                                 },
