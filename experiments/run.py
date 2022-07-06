@@ -34,7 +34,7 @@ def run(config: Dict) -> List:
         if not env_item["discrete"]:
             limits["action_min"] = env.action_space.low
             limits["action_max"] = env.action_space.high
-            
+
         experiment_algos = (
             config["algorithms_discrete"]
             if env_item["discrete"]
@@ -67,11 +67,10 @@ def run(config: Dict) -> List:
                                 },
                                 {
                                     "environment_reward": utils.evaluate_on_environment(
-                                        env = env,
-                                        discrete= env_item["discrete"],
-                                        n_trials=config["env_evaluation_trials"], 
-                                        timeout = 30,
-                                        
+                                        env=env,
+                                        discrete=env_item["discrete"],
+                                        n_trials=config["env_evaluation_trials"],
+                                        timeout=30,
                                     )
                                 },
                             )

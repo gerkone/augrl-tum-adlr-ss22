@@ -19,7 +19,7 @@ from tqdm import tqdm
 
 from augrl import utils
 from augrl.augmentations import synth
-import gym
+
 
 def custom_augmented_fitter(
     cls,
@@ -45,7 +45,9 @@ def custom_augmented_fitter(
     do_augmentations = True
     if not hasattr(cls, "augmentations") or len(cls.augmentations) == 0:
         if verbose:
-            LOG.debug("'augmentations' class field not set. No augmentations will be used.")
+            LOG.debug(
+                "'augmentations' class field not set. No augmentations will be used."
+            )
         cls.augmentations = {}
         do_augmentations = False
     transitions = []
@@ -181,7 +183,11 @@ def custom_augmented_fitter(
         iterator.reset()
         if do_augmentations:
             new_transitions = _augment(
-                augmentation_functions, transitions_, cls._generated_maxlen, cls._scaler, cls.limits
+                augmentation_functions,
+                transitions_,
+                cls._generated_maxlen,
+                cls._scaler,
+                cls.limits,
             )
             if new_transitions:
                 iterator.add_generated_transitions(new_transitions)
@@ -191,7 +197,7 @@ def custom_augmented_fitter(
                         real_transitions=len(iterator.transitions),
                         fake_transitions=len(iterator.generated_transitions),
                     )
-        
+
         range_gen = tqdm(
             range(len(iterator)),
             disable=not show_progress,
@@ -267,6 +273,8 @@ def _augment(
         augmentation_functions, augmentable_portions
     ):
         new_transitions.extend(
-            agmentation_fn(transitions_i, utils.get_scaling_factor(scaler), limits, **args)
+            agmentation_fn(
+                transitions_i, utils.get_scaling_factor(scaler), limits, **args
+            )
         )
     return new_transitions

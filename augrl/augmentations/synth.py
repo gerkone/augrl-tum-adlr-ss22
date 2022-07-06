@@ -2,7 +2,7 @@
 This module contains some augmentation methods, to be used in training
 """
 
-from typing import List, Tuple, Dict
+from typing import Dict, List, Tuple
 
 import numpy as np
 from d3rlpy.algos.torch.base import TorchImplBase
@@ -13,10 +13,13 @@ from d3rlpy.models.torch.q_functions.ensemble_q_function import (
     EnsembleDiscreteQFunction,
 )
 from d3rlpy.torch_utility import TorchMiniBatch
-import gym
+
 
 def gaussian(
-    transitions: List[Transition], scaling: np.ndarray, limits: Dict[str, np.array], sigma: float = 1e-3
+    transitions: List[Transition],
+    scaling: np.ndarray,
+    limits: Dict[str, np.array],
+    sigma: float = 1e-3,
 ) -> List[Transition]:
     def _gaussian(trans: Transition, scaling: np.ndarray, sigma: float):
         augmented_obs = trans.observation + scaling * np.random.normal(
@@ -37,7 +40,10 @@ def gaussian(
 
 
 def uniform(
-    transitions: List[Transition], scaling: np.ndarray, limits: Dict[str, np.array], alpha: float = 1e-3
+    transitions: List[Transition],
+    scaling: np.ndarray,
+    limits: Dict[str, np.array],
+    alpha: float = 1e-3,
 ) -> List[Transition]:
     def _uniform(trans: Transition, scaling: np.ndarray, alpha: float) -> Transition:
         augmented_obs = trans.observation + scaling * np.random.uniform(
@@ -58,7 +64,10 @@ def uniform(
 
 
 def mixup(
-    transitions: List[Transition], scaling: np.ndarray, limits: Dict[str, np.array], eps: float = 0.4
+    transitions: List[Transition],
+    scaling: np.ndarray,
+    limits: Dict[str, np.array],
+    eps: float = 0.4,
 ) -> List[Transition]:
     def _mixup(trans: Transition, eps: float) -> Transition:
         gamma = np.random.beta(eps, eps, size=trans.get_observation_shape())
@@ -103,9 +112,7 @@ def adversarial(
         # single-step projected gradient attack (PGD)
         if isinstance(impl.q_function, EnsembleContinuousQFunction):
             action = impl._predict_best_action(batch.observations)
-            q_val = impl.q_function(
-                batch.observations, action 
-            )
+            q_val = impl.q_function(batch.observations, action)
         if isinstance(impl.q_function, EnsembleDiscreteQFunction):
             q_val = impl.q_function(batch.observations).max(axis=-1).values
 
@@ -138,7 +145,10 @@ def adversarial(
         del augmented_observations
         # fill transition list iterating over elements of the batch
         # TODO slow!
-        np_augmented_observations = [clip_observation(augmented_obs, limits) for augmented_obs in np_augmented_observations]
+        np_augmented_observations = [
+            clip_observation(augmented_obs, limits)
+            for augmented_obs in np_augmented_observations
+        ]
         return [
             Transition(
                 state_size,
@@ -195,8 +205,10 @@ def adversarial(
         )
     return augmented_transitions
 
+
 def clip_observation(observation: np.ndarray, limits: Dict[str, np.array]):
     return np.clip(observation, limits["obs_min"], limits["obs_max"])
+
 
 def clip_action(action: np.ndarray, limits: Dict[str, np.array]):
     return np.clip(action, limits["action_min"], limits["action_max"])
