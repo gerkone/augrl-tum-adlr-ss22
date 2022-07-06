@@ -1,0 +1,28 @@
+---
+# misc
+cuda: no
+seed: 54
+steps_per_epoch: 10
+real_ratio: 0.5
+env_evaluation_trials: 10
+save_interval: 2
+scaler: min_max
+verbose: yes
+show_progress: yes
+
+algorithms_discrete:
+  - name: bcq
+    data_ratio: [0.1, 1.0]
+
+algorithms_continuous:
+
+environments:
+  - name: cartpole-replay
+    batches: 50
+    discrete: yes
+
+augmentations:
+  gaussian:
+    sigma: 1.0e-3
+  mixup:
+    eps: 0.4

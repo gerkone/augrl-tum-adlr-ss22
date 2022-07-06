@@ -15,6 +15,7 @@ os.environ["D4RL_SUPPRESS_IMPORT_ERROR"] = "1"
 
 
 def run(config: Dict) -> List:
+    experiment_date = datetime.datetime.now().strftime("%d%m%Y")
     thrown_errors = []
     results = []
     d3rlpy.seed(config["seed"])
@@ -46,7 +47,7 @@ def run(config: Dict) -> List:
                         augmentations=config["augmentations"],
                         real_ratio=config["real_ratio"],
                         scaler=config["scaler"],
-                        **algo_item["args"],
+                        **algo_item.get("args", {}),
                     )
                     agent.generated_maxlen = len(dataset.observations)
                     metrics = agent.fit(
@@ -58,7 +59,7 @@ def run(config: Dict) -> List:
                             utils.merge_dicts(
                                 {
                                     name: getattr(d3rlpy.metrics, name)
-                                    for name in algo_item["scorers"]
+                                    for name in algo_item.get("scorers", [])
                                 },
                                 {
                                     "environment_reward": d3rlpy.metrics.evaluate_on_environment(
@@ -69,6 +70,11 @@ def run(config: Dict) -> List:
                         ),
                         verbose=config["verbose"],
                         show_progress=config["show_progress"],
+                        save_interval=config["save_interval"],
+                        with_timestamp=False,
+                        logdir="d3rlpy_logs/{}_{}".format(
+                            algo.__name__, experiment_date
+                        ),
                         experiment_name="{}_{}_{}_{}".format(
                             data_ratio,
                             env_item["name"],
@@ -118,10 +124,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     with open(args.config, "r") as file:
-        try:
-            config = yaml.safe_load(file)
-        except yaml.YAMLError as exc:
-            print(exc)
+        config = yaml.safe_load(file)
     errors = run(config)
     for e in errors:
         print(e)

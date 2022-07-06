@@ -4,7 +4,8 @@ cuda: yes
 seed: 54
 steps_per_epoch: 2000
 real_ratio: 0.5
-env_evaluation_trials: 5
+env_evaluation_trials: 10
+save_interval: 5
 scaler: min_max
 verbose: yes
 show_progress: yes
@@ -15,16 +16,24 @@ algorithms_discrete:
     scorers:
       - td_error_scorer
       - average_value_estimation_scorer
-      - discounted_sum_of_advantage_scorer
-      - initial_state_value_estimation_scorer
     args: {}
   - name: augmentedbcq
     data_ratio: [0.1, 0.5, 1.0]
     scorers:
       - td_error_scorer
       - average_value_estimation_scorer
-      - discounted_sum_of_advantage_scorer
-      - initial_state_value_estimation_scorer
+    args: {}
+  - name: cql
+    data_ratio: [0.1, 0.5, 1.0]
+    scorers:
+      - td_error_scorer
+      - average_value_estimation_scorer
+    args: {}
+  - name: augmentedcql
+    data_ratio: [0.1, 0.5, 1.0]
+    scorers:
+      - td_error_scorer
+      - average_value_estimation_scorer
     args: {}
 
 algorithms_continuous:
@@ -33,20 +42,28 @@ algorithms_continuous:
     scorers:
       - td_error_scorer
       - average_value_estimation_scorer
-      - discounted_sum_of_advantage_scorer
-      - initial_state_value_estimation_scorer
     args: {}
   - name: augmentedbcq
     data_ratio: [0.1, 0.5, 1.0]
     scorers:
       - td_error_scorer
       - average_value_estimation_scorer
-      - discounted_sum_of_advantage_scorer
-      - initial_state_value_estimation_scorer
+    args: {}
+  - name: cql
+    data_ratio: [0.1, 0.5, 1.0]
+    scorers:
+      - td_error_scorer
+      - average_value_estimation_scorer
+    args: {}
+  - name: augmentedcql
+    data_ratio: [0.1, 0.5, 1.0]
+    scorers:
+      - td_error_scorer
+      - average_value_estimation_scorer
     args: {}
 
 environments:
-  - name: cartpole
+  - name: cartpole-replay
     batches: 30000
     discrete: yes
   - name: pen-cloned-v0
@@ -56,9 +73,6 @@ environments:
     batches: 100000
     discrete: no
   - name: walker2d-expert-v0
-    batches: 100000
-    discrete: no
-  - name: walker2d-random-v0
     batches: 100000
     discrete: no
 
