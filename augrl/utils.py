@@ -1,6 +1,7 @@
-from typing import Any, Callable, Dict, Union
+from typing import Any, Callable, Dict, List, Tuple, Union
 
 import d3rlpy.algos
+import d3rlpy.metrics
 import gym
 import numpy as np
 import timeout_decorator
@@ -51,38 +52,44 @@ def get_algo(name: str, discrete: bool) -> d3rlpy.algos.AlgoBase:
         return augrl.algos.get_algo(name, discrete)
 
 
-def _evaluate(
-    env: gym.Env, algo: AlgoProtocol, epsilon: float, timeout: int, discrete: bool
-):
-    @timeout_decorator.timeout(
-        timeout, use_signals=True, timeout_exception=TimeoutError
-    )
-    def _fn():
-        observation = env.reset()
-        episode_reward = 0.0
-        while True:
-            if np.random.random() < epsilon:
-                action = env.action_space.sample()
-            else:
-                action = algo.predict([observation])[0]
-
-            # clip actions
-            if not discrete:
-                action = np.clip(action, env.action_space.low, env.action_space.high)
-            if discrete and not env.action_space.contains(action):
-                continue
-
-            observation, reward, done, _ = env.step(action)
-            episode_reward += reward
-            if done:
-                break
-        return episode_reward
-
+def get_dataset(name) -> Tuple[MDPDataset, gym.Env]:
     try:
-        value = _fn()
-    except TimeoutError:
-        value = 0.0
-    return value
+        return d3rlpy.datasets.get_dataset(name)
+    except ValueError:
+        try:
+            return d3rlpy.datasets.get_d4rl(name)
+        except ValueError:
+            raise NotImplementedError
+
+
+def get_metrics(
+    scorers: Dict[str, Callable], algo: AlgoProtocol, dataset: MDPDataset
+) -> Dict[str, float]:
+    metrics = {}
+    for name, scorer_fn in scorers.items():
+        metrics[name] = scorer_fn(algo, dataset)
+
+    return metrics
+
+
+def get_scorers(scorer_names: List[str], **kwargs) -> Dict[str, Callable]:
+    return merge_dicts(
+        {
+            name: getattr(d3rlpy.metrics, name)
+            for name in scorer_names
+            if name != "evaluate_on_environment"
+        },
+        {
+            "evaluate_on_environment": evaluate_on_environment(
+                env=kwargs.get("env"),
+                discrete=kwargs.get("discrete"),
+                n_trials=kwargs.get("env_evaluation_trials", 5),
+                timeout=30,
+            )
+        }
+        if "evaluate_on_environment" in scorer_names
+        else {},
+    )
 
 
 def evaluate_on_environment(
@@ -130,3 +137,37 @@ def evaluate_on_environment(
         return float(np.mean(episode_rewards))
 
     return scorer
+
+
+def _evaluate(
+    env: gym.Env, algo: AlgoProtocol, epsilon: float, timeout: int, discrete: bool
+):
+    @timeout_decorator.timeout(
+        timeout, use_signals=True, timeout_exception=TimeoutError
+    )
+    def _fn():
+        observation = env.reset()
+        episode_reward = 0.0
+        while True:
+            if np.random.random() < epsilon:
+                action = env.action_space.sample()
+            else:
+                action = algo.predict([observation])[0]
+
+            # clip actions
+            if not discrete:
+                action = np.clip(action, env.action_space.low, env.action_space.high)
+            if discrete and not env.action_space.contains(action):
+                continue
+
+            observation, reward, done, _ = env.step(action)
+            episode_reward += reward
+            if done:
+                break
+        return episode_reward
+
+    try:
+        value = _fn()
+    except TimeoutError:
+        value = 0.0
+    return value

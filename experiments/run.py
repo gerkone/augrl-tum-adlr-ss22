@@ -22,12 +22,9 @@ def run(config: Dict) -> List:
 
     for env_item in config["environments"]:
         try:
-            full_dataset, env = d3rlpy.datasets.get_dataset(env_item["name"])
-        except ValueError:
-            try:
-                full_dataset, env = d3rlpy.datasets.get_d4rl(env_item["name"])
-            except ValueError:
-                continue
+            full_dataset, env = utils.get_dataset(env_item["name"])
+        except NotImplementedError:
+            continue
         limits = {}
         limits["obs_min"] = env.observation_space.low
         limits["obs_max"] = env.observation_space.high
@@ -55,23 +52,13 @@ def run(config: Dict) -> List:
                     agent.generated_maxlen = config.get("generated_maxlen", 100000)
                     agent.limits = limits
 
-                    scorers = utils.merge_dicts(
-                        {
-                            name: getattr(d3rlpy.metrics, name)
-                            for name in algo_item.get("scorers", [])
-                            if name != "environment_reward"
-                        },
-                        {
-                            "environment_reward": utils.evaluate_on_environment(
-                                env=env,
-                                discrete=env_item["discrete"],
-                                n_trials=config["env_evaluation_trials"],
-                                timeout=30,
-                            )
-                        }
-                        if "environment_reward" in algo_item.get("scorers", [])
-                        else {},
+                    scorers = utils.get_scorers(
+                        scorer_names=algo_item.get("scorers", []),
+                        env=env,
+                        discrete=env_item["discrete"],
+                        env_evaluation_trials=config["env_evaluation_trials"],
                     )
+
                     metrics = agent.fit(
                         dataset=dataset,
                         eval_episodes=full_dataset,
