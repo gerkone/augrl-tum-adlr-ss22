@@ -52,29 +52,32 @@ def run(config: Dict) -> List:
                         scaler=config["scaler"],
                         **algo_item.get("args", {}),
                     )
-                    agent.generated_maxlen = len(dataset.observations)
+                    agent.generated_maxlen = config.get("generated_maxlen", 100000)
                     agent.limits = limits
+
+                    scorers = utils.merge_dicts(
+                        {
+                            name: getattr(d3rlpy.metrics, name)
+                            for name in algo_item.get("scorers", [])
+                            if name != "environment_reward"
+                        },
+                        {
+                            "environment_reward": utils.evaluate_on_environment(
+                                env=env,
+                                discrete=env_item["discrete"],
+                                n_trials=config["env_evaluation_trials"],
+                                timeout=30,
+                            )
+                        }
+                        if "environment_reward" in algo_item.get("scorers", [])
+                        else {},
+                    )
                     metrics = agent.fit(
                         dataset=dataset,
                         eval_episodes=full_dataset,
                         n_steps=env_item["batches"],
                         n_steps_per_epoch=config["steps_per_epoch"],
-                        scorers=(
-                            utils.merge_dicts(
-                                {
-                                    name: getattr(d3rlpy.metrics, name)
-                                    for name in algo_item.get("scorers", [])
-                                },
-                                {
-                                    "environment_reward": utils.evaluate_on_environment(
-                                        env=env,
-                                        discrete=env_item["discrete"],
-                                        n_trials=config["env_evaluation_trials"],
-                                        timeout=30,
-                                    )
-                                },
-                            )
-                        ),
+                        scorers=scorers,
                         verbose=config["verbose"],
                         show_progress=config["show_progress"],
                         save_interval=config["save_interval"],
@@ -89,24 +92,27 @@ def run(config: Dict) -> List:
                             env_item["batches"],
                         ),
                     )
-                    # easy pandasify
-                    for epoch, metric in metrics:
-                        results.append(
-                            utils.merge_dicts(
-                                {
-                                    "env": env_item["name"],
-                                    "algo": "{} {}".format(data_ratio, algo.__name__),
-                                    "epoch": epoch,
-                                },
-                                metric,
+                    if algo_item.get("scorers", None) is not None:
+                        # easy pandasify
+                        for epoch, metric in metrics:
+                            results.append(
+                                utils.merge_dicts(
+                                    {
+                                        "env": env_item["name"],
+                                        "algo": "{} {}".format(
+                                            data_ratio, algo.__name__
+                                        ),
+                                        "epoch": epoch,
+                                    },
+                                    metric,
+                                )
+                            )
+                        results_df = pd.DataFrame(results)
+                        results_df.to_parquet(
+                            "results/cloud_results_{}.parquet".format(
+                                datetime.datetime.now().strftime("%d%m%Y_%H%M")
                             )
                         )
-                    results_df = pd.DataFrame(results)
-                    results_df.to_parquet(
-                        "results/cloud_results_{}.parquet".format(
-                            datetime.datetime.now().strftime("%d%m%Y_%H%M")
-                        )
-                    )
                 except Exception:
                     error = "[ERROR] {}: algo {} on env {}. Trace: {}".format(
                         datetime.datetime.now(),
