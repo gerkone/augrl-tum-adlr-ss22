@@ -59,7 +59,7 @@ def get_dataset(name) -> Tuple[MDPDataset, gym.Env]:
         try:
             return d3rlpy.datasets.get_d4rl(name)
         except ValueError:
-            raise NotImplementedError
+            raise NotImplementedError  # pylint: disable=W0707
 
 
 def get_metrics(
