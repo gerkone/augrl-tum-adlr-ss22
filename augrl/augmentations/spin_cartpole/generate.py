@@ -34,7 +34,13 @@ if __name__ == "__main__":
                 if terminal:
                     break
             if steps % LABEL_FREQ == 0 and last_labeling < steps:
-                preference = int(input("Did it spin (0/1)? :\t"))
+                while True:
+                    try:
+                        preference = int(input("Did it spin (0/1)? :\t"))
+                    except ValueError:
+                        print("What?", end="")
+                    else:
+                        break
                 if preference == 1:
                     spins += 1
                 log.append({"segment": segment, "state": states, "action": actions, "preference": preference, "size": len(states)})
@@ -44,5 +50,5 @@ if __name__ == "__main__":
                 states = []
                 actions = []
     results = pd.DataFrame(log)
-    results.to_pickle("handmade_results_{}.pickle".format(eps))
+    results.to_pickle("preferences/handmade_results_{}.pickle".format(eps))
     print("Saved {} segments from {} episodes ({} steps in total)".format(len(results), eps, total_steps))
