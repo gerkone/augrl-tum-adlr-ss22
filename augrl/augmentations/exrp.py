@@ -11,12 +11,14 @@ class ExplicitRewardPredictor:
     def __init__(
         self,
         predictor_net: nn.Module,
+        device,
         lr: float = 1e-3,
         batch_size: int = 32,
     ):
         self.batch_size = batch_size
 
-        self.predictor_net = predictor_net
+        self.device = device
+        self.predictor_net = predictor_net.to(device)
 
         self.optimizer = torch.optim.Adam(
             self.predictor_net.parameters(), lr=lr, weight_decay=1e-5
@@ -26,22 +28,23 @@ class ExplicitRewardPredictor:
         )
 
         self.loss_fn = nn.CrossEntropyLoss()
-    
+
     @classmethod
     def from_env(cls, env: gym.Env,
-        lr: float = 1e-4,
-        batch_size: int = 32,):
+                 device,
+                 lr: float = 1e-4,
+                 batch_size: int = 32,):
         state_embed = _dense_embed(env.observation_space.shape)
         action_embed = _dense_embed(env.action_space.shape)
         predictor = PredictorNetwork(state_embed, action_embed)
-        return cls(predictor, lr, batch_size)
-    
+        return cls(predictor, device, lr, batch_size)
+
     def __call__(self, state: torch.Tensor, action: torch.Tensor) -> float:
-        return self.predictor_net(state, action)
+        return self.predictor_net(state.to(self.device), action.to(self.device)).detach().cpu()
 
     def prefer(self, segments: Dict) -> int:
         "Returns 0 if left trajectory is preferred (ie predicted left reward is larger than predicted right reward)."
-        return (self.predictor_net.cumulate_on_segment(segments["obs_left"], segments["act_left"]) < self.predictor_net.cumulate_on_segment(segments["obs_right"], segments["act_right"])).int()
+        return (self.predictor_net.cumulate_on_segment(segments["obs_left"].to(self.device), segments["act_left"].to(self.device)) < self.predictor_net.cumulate_on_segment(segments["obs_right"].to(self.device), segments["act_right"].to(self.device))).int().detach().cpu()
 
     def train(self, segments: Dict, epochs: int = 10, show_pregress: bool = True):
         """Train the predictor on passed segment preferences, using cross entropy loss.
@@ -80,7 +83,7 @@ class ExplicitRewardPredictor:
         losses = []
         for e in pbar:
             observation_left_dl = iter(torch.utils.data.DataLoader(
-            segments["obs_left"], batch_size=self.batch_size, shuffle=False
+                segments["obs_left"], batch_size=self.batch_size, shuffle=False
             ))
             observation_right_dl = iter(torch.utils.data.DataLoader(
                 segments["obs_right"], batch_size=self.batch_size, shuffle=False
@@ -108,13 +111,15 @@ class ExplicitRewardPredictor:
                     # batched obs and act have shape (batch, segment length, ...)
                     self.optimizer.zero_grad()
                     # get total segment reward
-                    cumulated_reward_left = self.predictor_net.cumulate_on_segment(obs_left_batch, act_left_batch)
-                    cumulated_reward_right = self.predictor_net.cumulate_on_segment(obs_right_batch, act_right_batch)
+                    cumulated_reward_left = self.predictor_net.cumulate_on_segment(
+                        obs_left_batch.to(self.device), act_left_batch.to(self.device))
+                    cumulated_reward_right = self.predictor_net.cumulate_on_segment(
+                        obs_right_batch.to(self.device), act_right_batch.to(self.device))
                     # should have shape (batch, 2)
                     reward_comparison = torch.stack(
                         [cumulated_reward_left, cumulated_reward_right], axis=1
                     )
-                    loss = self.loss_fn(reward_comparison, pref_batch)
+                    loss = self.loss_fn(reward_comparison, pref_batch.to(self.device))
                     loss.backward()
                     self.optimizer.step()
                     losses.append(loss)
@@ -150,7 +155,7 @@ class PredictorNetwork(nn.Module):
         x = torch.add(s_em, a_em)
         x = nn.LeakyReLU(True)(x)
         return self.predictor(x)
-    
+
     def cumulate_on_segment(self, obs: torch.Tensor, act: torch.Tensor) -> torch.Tensor:
         return torch.sum(torch.stack([
             self(obs.reshape(obs.shape[0], *obs.shape[2:]), act.reshape(act.shape[0], *act.shape[2:])).squeeze()
@@ -166,6 +171,7 @@ def _dense_embed(s: Tuple):
         nn.LeakyReLU(True),
         nn.Linear(100, 100),
     )
+
 
 def get_segments(obs_spin: torch.Tensor, act_spin: torch.Tensor, obs_no_spin: torch.Tensor, act_no_spin: torch.Tensor) -> Dict:
     segments = {}
