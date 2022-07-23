@@ -44,5 +44,5 @@ if __name__ == "__main__":
                 states = []
                 actions = []
     results = pd.DataFrame(log)
-    results.to_parquet("handmade_results.parquet")
+    results.to_pickle("handmade_results_{}.pickle".format(eps))
     print("Saved {} segments from {} episodes ({} steps in total)".format(len(results), eps, total_steps))
