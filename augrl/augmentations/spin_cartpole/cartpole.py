@@ -4,11 +4,10 @@ Copied from http://incompleteideas.net/sutton/book/code/pole.c
 permalink: https://perma.cc/C9ZM-652R
 """
 import math
-from typing import Optional, Union
-
-import numpy as np
+from typing import Callable, Optional, Union
 
 import gym
+import numpy as np
 from gym import logger, spaces
 from gym.envs.classic_control import utils
 from gym.error import DependencyNotInstalled
@@ -20,7 +19,8 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
     ### Description
 
     This environment corresponds to the version of the cart-pole problem described by Barto, Sutton, and Anderson in
-    ["Neuronlike Adaptive Elements That Can Solve Difficult Learning Control Problem"](https://ieeexplore.ieee.org/document/6313077).
+    ["Neuronlike Adaptive Elements That Can Solve Difficult Learning Control Problem"]
+    (https://ieeexplore.ieee.org/document/6313077).
     A pole is attached by an un-actuated joint to a cart, which moves along a frictionless track.
     The pendulum is placed upright on the cart and the goal is to balance the pole by applying forces
      in the left and right direction on the cart.
@@ -36,11 +36,13 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
     | 1   | Push cart to the right |
 
     **Note**: The velocity that is reduced or increased by the applied force is not fixed and it depends on the angle
-     the pole is pointing. The center of gravity of the pole varies the amount of energy needed to move the cart underneath it
+     the pole is pointing. The center of gravity of the pole varies the amount of energy needed to move the cart
+     underneath it
 
     ### Observation Space
 
-    The observation is a `ndarray` with shape `(4,)` with the values corresponding to the following positions and velocities:
+    The observation is a `ndarray` with shape `(4,)` with the values corresponding to the following positions and
+    velocities:
 
     | Num | Observation           | Min                 | Max               |
     |-----|-----------------------|---------------------|-------------------|
@@ -87,7 +89,13 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         "render_fps": 50,
     }
 
-    def __init__(self, timeout: int = 1000, game: bool = False, render_mode: Optional[str] = None):
+    def __init__(
+        self,
+        timeout: int = 1000,
+        game: bool = False,
+        reward_fn: Optional[Callable] = None,
+        render_mode: Optional[str] = None,
+    ):
         # must half otherwise very hard
         self.gravity = 5.0
         self.masscart = 0.5
@@ -106,6 +114,11 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         self.timeout = timeout
         # manual play
         self.game = game
+
+        if reward_fn is None:
+            self.reward_fn = lambda s, a: 0.0
+        else:
+            self.reward_fn = reward_fn
 
         high = np.array(
             [
@@ -166,22 +179,21 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             theta = theta + self.tau * theta_dot
 
         self.state = (x, x_dot, theta, theta_dot)
+        state = np.array(self.state, dtype=np.float32)
 
         # removed angle threshold from termination condition
         terminated = bool(
-            x < -self.x_threshold
-            or x > self.x_threshold
-            or self.n_steps > self.timeout
+            x < -self.x_threshold or x > self.x_threshold or self.n_steps > self.timeout
         )
 
         if not terminated:
             # no reward returned
-            reward = 0.0
+            reward = self.reward_fn(state, action)
             self.n_steps += 1
         elif self.steps_beyond_terminated is None:
             # Pole just fell! Or maybe not
             self.steps_beyond_terminated = 0
-            reward = 0.0
+            reward = self.reward_fn(state, action)
         else:
             if self.steps_beyond_terminated == 0:
                 logger.warn(
@@ -194,7 +206,7 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             reward = 0.0
 
         self.renderer.render_step()
-        return np.array(self.state, dtype=np.float32), reward, terminated, False, {}
+        return state, reward, terminated, {}
 
     def reset(
         self,
@@ -231,7 +243,7 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             import pygame
             from pygame import gfxdraw
         except ImportError:
-            raise DependencyNotInstalled(
+            raise DependencyNotInstalled(  # pylint
                 "pygame is not installed, run `pip install gym[classic_control]`"
             )
 

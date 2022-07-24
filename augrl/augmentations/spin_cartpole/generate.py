@@ -1,9 +1,10 @@
 import os
-import pandas as pd
 import sys
-os.chdir("..")
+
+import pandas as pd
 from cartpole import CartPoleEnv
 
+os.chdir("..")
 
 LABEL_FREQ = 100
 
@@ -23,12 +24,12 @@ if __name__ == "__main__":
         action = 0
         states = []
         actions = []
-        steps = last_labeling = 0 
+        steps = last_labeling = 0
         while True:
             action = env.render()
-            if action != None:
+            if action is not None:
                 steps += 1
-                state, _, terminal, _, _ = env.step(action)
+                state, _, terminal, _ = env.step(action)
                 states.append(state)
                 actions.append(action)
                 if terminal:
@@ -36,14 +37,24 @@ if __name__ == "__main__":
             if steps % LABEL_FREQ == 0 and last_labeling < steps:
                 while True:
                     try:
-                        preference = int(input("Did it spin (0/1)? :\t"))
+                        preference = int(input("Spin (0/1)? \t"))
+                        if preference not in [0, 1]:
+                            raise ValueError
                     except ValueError:
-                        print("What?", end="")
+                        print("What? ", end="")
                     else:
                         break
                 if preference == 1:
                     spins += 1
-                log.append({"segment": segment, "state": states, "action": actions, "preference": preference, "size": len(states)})
+                log.append(
+                    {
+                        "segment": segment,
+                        "state": states,
+                        "action": actions,
+                        "preference": preference,
+                        "size": len(states),
+                    }
+                )
                 last_labeling = steps
                 segment += 1
                 total_steps += len(states)
@@ -51,4 +62,8 @@ if __name__ == "__main__":
                 actions = []
     results = pd.DataFrame(log)
     results.to_pickle("preferences/handmade_results_{}.pickle".format(eps))
-    print("Saved {} segments from {} episodes ({} steps in total)".format(len(results), eps, total_steps))
+    print(
+        "Saved {} segments from {} episodes ({} steps in total)".format(
+            len(results), eps, total_steps
+        )
+    )
