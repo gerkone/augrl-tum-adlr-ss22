@@ -1,0 +1,49 @@
+---
+# misc
+cuda: yes
+epochs: 100
+generated_maxlen: 200000
+real_ratio: 0.5
+data_ratio: [1.0, 0.1] #[0.1, 0.5, 1.0]
+test_size: 0.2
+env_evaluation_trials: 10
+save_interval: 5
+scaler: min_max
+verbose: yes
+show_progress: yes
+
+algorithms:
+  - name: augmentedcql
+  - name: augmentedbcq
+  - name: bcq
+  - name: cql
+#  - name: bear
+
+
+
+environments:
+#  - cartpole-replay
+#  - pendulum-replay
+
+#  - walker2d-medium-v2
+#  - halfcheetah-medium-v2
+#  - hopper-medium-v2
+
+#  - relocate-human-v1
+  - door-human-v1
+#  - hammer-human-v1
+
+scorers:
+  - evaluate_on_environment
+  - discounted_sum_of_advantage_scorer
+  - td_error_scorer
+  - average_value_estimation_scorer
+
+augmentations:
+  adversarial:
+    norm: 2
+    eps: 0.001
+  gaussian:
+    sigma: 0.003
+  mixup:
+    eps: 0.4

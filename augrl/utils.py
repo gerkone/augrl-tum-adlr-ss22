@@ -1,10 +1,11 @@
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Tuple, Union, Type
 
 import d3rlpy.algos
 import d3rlpy.metrics
 import gym
 import numpy as np
 import timeout_decorator
+from d3rlpy.algos import AlgoBase
 from d3rlpy.dataset import MDPDataset
 from d3rlpy.metrics.scorer import AlgoProtocol
 from d3rlpy.preprocessing.scalers import Scaler
@@ -45,7 +46,7 @@ def merge_dicts(d1: Dict, d2: Dict) -> Dict:
     return {**d1, **d2}
 
 
-def get_algo(name: str, discrete: bool) -> d3rlpy.algos.AlgoBase:
+def get_algo(name: str, discrete: bool) -> Type[AlgoBase] | AlgoBase:
     try:
         return d3rlpy.algos.get_algo(name, discrete)
     except ValueError:

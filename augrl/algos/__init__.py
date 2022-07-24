@@ -31,7 +31,7 @@ AUG_DISCRETE_ALGORITHMS: Dict[str, d3rlpy.algos.AlgoBase] = {
 
 AUG_CONTINUOUS_ALGORITHMS: Dict[str, d3rlpy.algos.AlgoBase] = {
     "augmentedbcq": AugmentedBCQ,
-    "augmentedcqL": AugmentedCQL,
+    "augmentedcql": AugmentedCQL,
     "augmentedbc": AugmentedBC,
     "augmentedbear": AugmentedBEAR,
 }
