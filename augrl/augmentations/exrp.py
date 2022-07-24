@@ -36,7 +36,7 @@ class ExplicitRewardPredictor:
         device: Any = "cpu",
         lr: float = 1e-4,
     ):
-        predictor = torch.load(path)
+        predictor = torch.load(path, map_location=device)
         return cls(predictor, device, lr)
 
     def __call__(self, state: np.array, action: np.array) -> float:
@@ -70,7 +70,7 @@ class ExplicitRewardPredictor:
         torch.save(self.predictor_net, path)
 
     def load(self, path: str = "reward_predictor_net.pt"):
-        self.predictor_net = torch.load(path)
+        self.predictor_net = torch.load(path, map_location=self.device)
 
     def train(
         self,

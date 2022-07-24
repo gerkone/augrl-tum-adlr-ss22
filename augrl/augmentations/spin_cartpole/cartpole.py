@@ -97,7 +97,7 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         render_mode: Optional[str] = None,
     ):
         # must half otherwise very hard
-        self.gravity = 5.0
+        self.gravity = 4.0
         self.masscart = 0.5
         self.masspole = 0.3
         self.total_mass = self.masspole + self.masscart
@@ -106,7 +106,7 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         self.force_mag = 10.0
         self.tau = 0.02  # seconds between state updates
         # angular velocity decay
-        self.pin_friction = 0.95
+        self.pin_friction = 0.975
         self.kinematics_integrator = "euler"
 
         self.x_threshold = 2.4
@@ -188,12 +188,12 @@ class CartPoleEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
 
         if not terminated:
             # no reward returned
-            reward = self.reward_fn(state, action)
+            reward = self.reward_fn(state, np.array(action))
             self.n_steps += 1
         elif self.steps_beyond_terminated is None:
             # Pole just fell! Or maybe not
             self.steps_beyond_terminated = 0
-            reward = self.reward_fn(state, action)
+            reward = self.reward_fn(state, np.array(action))
         else:
             if self.steps_beyond_terminated == 0:
                 logger.warn(

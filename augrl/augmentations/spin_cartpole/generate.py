@@ -1,10 +1,8 @@
-import os
 import sys
 
 import pandas as pd
-from cartpole import CartPoleEnv
 
-os.chdir("..")
+from .cartpole import CartPoleEnv
 
 LABEL_FREQ = 100
 
@@ -61,7 +59,11 @@ if __name__ == "__main__":
                 states = []
                 actions = []
     results = pd.DataFrame(log)
-    results.to_pickle("preferences/handmade_results_{}.pickle".format(eps))
+    results.to_pickle(
+        "augrl/augmentations/spin_cartpole/preferences/handmade_results_{}.pickle".format(
+            eps
+        )
+    )
     print(
         "Saved {} segments from {} episodes ({} steps in total)".format(
             len(results), eps, total_steps
