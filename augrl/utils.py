@@ -143,9 +143,9 @@ def evaluate_on_environment(
 def _evaluate(
     env: gym.Env, algo: AlgoProtocol, epsilon: float, timeout: int, discrete: bool
 ):
-    @timeout_decorator.timeout(
-        timeout, use_signals=True, timeout_exception=TimeoutError
-    )
+    #@timeout_decorator.timeout(
+    #    timeout, use_signals=True, timeout_exception=TimeoutError
+    #)
     def _fn():
         observation = env.reset()
         episode_reward = 0.0

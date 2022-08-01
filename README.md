@@ -1,4 +1,4 @@
-# Augmenting datasets for Offline Reinforcement Learning
+# Augm/home/hamzahaddaoui_h/tum-adlr-ss22-3/experiments/experiment_01/d3rlpy_logs/AugmentedBCQ_door-human-v1_10/0.1_door-human-v1_AugmentedBCQ/model_2000.ptenting datasets for Offline Reinforcement Learning
 
 Team project repo for the TUM course _Advanced Deep Learning for Robotics_ (ADLR).
 

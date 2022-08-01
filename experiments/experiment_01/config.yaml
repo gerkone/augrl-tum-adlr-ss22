@@ -1,49 +1,38 @@
 ---
 # misc
 cuda: yes
+
 epochs: 100
-generated_maxlen: 200000
-real_ratio: 0.5
-data_ratio: [1.0, 0.1] #[0.1, 0.5, 1.0]
-test_size: 0.2
-env_evaluation_trials: 10
-save_interval: 5
+steps: 200000                  #total steps to train on
+save_interval: 10              #how many models and videos to save during training
+
+
+data_ratio: [0.1, 0.15, 0.2]       #amount of dataset to use for training
+test_size: 0.2                 #rain-test split ratio
+real_ratio: 0               #when augmentation on, ratio of synthetic data to use
+generated_maxlen: 200000      #max number of generated syntethic data
 scaler: min_max
-verbose: yes
-show_progress: yes
+
+env_evaluation_trials: 10
+
 
 algorithms:
   - name: augmentedcql
-  - name: augmentedbcq
-  - name: bcq
   - name: cql
-#  - name: bear
 
 
 
-environments:
-#  - cartpole-replay
-#  - pendulum-replay
 
-#  - walker2d-medium-v2
-#  - halfcheetah-medium-v2
-#  - hopper-medium-v2
 
-#  - relocate-human-v1
-  - door-human-v1
-#  - hammer-human-v1
+environment: Walker2d-v2
+dataset: walker2d-medium-v2
 
-scorers:
-  - evaluate_on_environment
-  - discounted_sum_of_advantage_scorer
-  - td_error_scorer
-  - average_value_estimation_scorer
 
 augmentations:
   adversarial:
     norm: 2
-    eps: 0.001
+    eps: 0.0001
   gaussian:
-    sigma: 0.003
+    sigma: 0.0001
   mixup:
     eps: 0.4
