@@ -4,10 +4,10 @@ cuda: yes
 
 epochs: 100
 steps: 200000                  #total steps to train on
-save_interval: 10              #how many models and videos to save during training
+save_interval: 10              #how many models and videos to save during training (MUST BE >=1)
 
 
-data_ratio: [0.1, 0.15, 0.2]       #amount of dataset to use for training
+data_ratio: [0.1, 0.15, 0.20]       #amount of dataset to use for training
 test_size: 0.2                 #rain-test split ratio
 real_ratio: 0               #when augmentation on, ratio of synthetic data to use
 generated_maxlen: 200000      #max number of generated syntethic data
@@ -17,15 +17,17 @@ env_evaluation_trials: 10
 
 
 algorithms:
-  - name: augmentedcql
-  - name: cql
+  - name: augmentedbcq
+  - name: bcq
+
+
 
 
 
 
 
 environment: Walker2d-v2
-dataset: walker2d-medium-v2
+dataset: walker2d-medium-expert-v2
 
 
 augmentations:
@@ -34,5 +36,3 @@ augmentations:
     eps: 0.0001
   gaussian:
     sigma: 0.0001
-  mixup:
-    eps: 0.4

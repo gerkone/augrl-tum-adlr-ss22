@@ -1,3 +1,4 @@
+import pprint
 from typing import Dict, List, Tuple, Type, Callable
 import datetime
 import os
@@ -36,15 +37,18 @@ def get_ratio_dataset(dataset: MDPDataset, ratio: float, size: int, is_discrete:
     )
 
 
-def train(full_dataset: MDPDataset, data_ratio: float, env: gym.Env, env_limits: Dict, is_discrete: bool, ds_size: int, algo: Callable, config: Dict, seed: int):
-    n_steps = config.get("steps")
-    n_steps_per_epoch = int(n_steps // config.get("epochs"))
-    save_interval = config.get("epochs") // config.get("save_interval")
+def train(train_set: MDPDataset,
+          test_set: MDPDataset.episodes,
+          n_steps: int,
+          n_steps_per_epoch: int,
+          save_interval: int,
+          data_ratio: float,
+          env: gym.Env,
+          env_limits: Dict,
+          algo: Callable,
+          config: Dict,
+          seed: int):
 
-    train_set = get_ratio_dataset(full_dataset, data_ratio, ds_size, is_discrete)
-
-    # train-test split
-    _, test_set = train_test_split(full_dataset, test_size=config['test_size'])
 
 
     vae_encoder = d3rlpy.models.encoders.VectorEncoderFactory([750, 750])
@@ -59,27 +63,27 @@ def train(full_dataset: MDPDataset, data_ratio: float, env: gym.Env, env_limits:
         real_ratio=config["real_ratio"],
         scaler=config["scaler"],
 
-        actor_learning_rate=1e-3,
-        critic_learning_rate=1e-4,
-        temp_learning_rate=1e-4,
-        imitator_learning_rate=1e-3,
-        actor_encoder_factory=encoder,
-        critic_encoder_factory=encoder,
-        conservative_weight=conservative_weight,
-        #imitator_encoder_factory=vae_encoder,
-        alpha_learning_rate=0.0,
-        batch_size=256,
-        lam=0.75,
-        action_flexibility=0.05,
-        n_action_samples=10,
+        #actor_learning_rate=1e-3,
+        #critic_learning_rate=1e-4,
+        #temp_learning_rate=1e-4,
+        #imitator_learning_rate=1e-3,
+        #actor_encoder_factory=encoder,
+        #critic_encoder_factory=encoder,
+        #conservative_weight=conservative_weight,
+        ##imitator_encoder_factory=vae_encoder,
+        #alpha_learning_rate=0.0,
+        #batch_size=256,
+        #lam=0.75,
+        #action_flexibility=0.05,
+        #n_action_samples=10,
     )
     agent.generated_maxlen = config.get("generated_maxlen", 100000)
     agent.limits = env_limits
 
     base_path = "./results/{}/seed_{}/{}_{}_".format(env.unwrapped.spec.id, seed, data_ratio, algo.__name__)
 
-    print("[INFO]: Starting training with {} with data_ratio: {} on {} samples".format(algo.__name__, data_ratio,
-                                                                                       n_steps))
+    print("[INFO]: Starting training with {} with data_ratio: {} (#samples = {})".format(algo.__name__, data_ratio,
+                                                                                       len(train_set.observations)))
     #start training
     list_metrics = []
     for epoch, metrics in agent.fitter(
@@ -136,7 +140,7 @@ def train(full_dataset: MDPDataset, data_ratio: float, env: gym.Env, env_limits:
 
 def save_results(results: List, env_name: str):
     results_df = pd.DataFrame(results)
-    path = "./results/{}/data_results.parquet".format(env_name)
+    path = "./results/{}/data_results_Walker2d_0.1_0.15_0.2.parquet".format(env_name)
 
     Path("./results/{}".format(env_name)).mkdir(parents=True, exist_ok=True)
     try:
@@ -174,18 +178,51 @@ def run(config: Dict, seed: int) -> List:
 
     print(f"[INFO]:  Loaded {config['dataset']} on environment {env.unwrapped.spec.id}: discrete={is_discrete}, #tot_observation={ds_size}")
 
-    for algo_item in config["algorithms"]:
-        for data_ratio in config['data_ratio']:
 
 
+
+    n_steps = config.get("steps")
+    n_steps_per_epoch = int(n_steps // config.get("epochs"))
+    save_interval = config.get("epochs") // config.get("save_interval")
+
+
+
+    config['data_ratio'].sort(reverse=True)
+
+    max_ratio = 1.0
+    max_len = ds_size
+    dataset = full_dataset
+    train_sets = {}
+    #train_sets[max_ratio] = get_ratio_dataset(full_dataset, max_ratio, ds_size, is_discrete)
+    #max_set = len(train_sets[max_ratio].observations)
+
+
+    for data_ratio in config['data_ratio']:
+        if data_ratio<max_ratio:
+            train_sets[data_ratio] = get_ratio_dataset(dataset, data_ratio/max_ratio, max_len, is_discrete)
+            max_ratio = data_ratio
+            dataset = train_sets[data_ratio]
+            max_len = len(dataset.observations)
+
+
+    print("Generated datasets: ")
+    for data_ratio in config['data_ratio']:
+        print("Data ratio {}: #observations = {}".format(data_ratio, len(train_sets[data_ratio].observations)))
+    # train-test split
+    _, test_set = train_test_split(full_dataset, test_size=config['test_size'])
+
+    for data_ratio in config['data_ratio']:
+        for algo_item in config["algorithms"]:
             try:
                 algo = utils.get_algo(algo_item["name"], is_discrete)
-                train(full_dataset=full_dataset,
+                train(train_set = train_sets[data_ratio],
+                      test_set = test_set,
+                      n_steps = n_steps,
+                      n_steps_per_epoch = n_steps_per_epoch,
+                      save_interval = save_interval,
                       data_ratio=data_ratio,
                       env=env,
                       env_limits=limits,
-                      is_discrete=is_discrete,
-                      ds_size=ds_size,
                       algo=algo,
                       config=config,
                       seed=seed)
