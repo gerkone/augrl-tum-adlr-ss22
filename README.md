@@ -6,8 +6,6 @@ Our project focuses on investigating the impact of data on generalization and pe
 
 Reinforcement learning sometimes suffers from costly data collection (labeling datasets with rewards usually requires human supervision). We want to address this problem by implementing augmentation techniques on the already collected datasets.
 
-Finally the project will move towards generating synthetic rollouts, and "best"-trajectory selection among the artificial data using heuristics or value-based approaches.
-
 ## Installation
 
 ```
