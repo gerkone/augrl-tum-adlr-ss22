@@ -1,4 +1,4 @@
-# Augm/home/hamzahaddaoui_h/tum-adlr-ss22-3/experiments/experiment_01/d3rlpy_logs/AugmentedBCQ_door-human-v1_10/0.1_door-human-v1_AugmentedBCQ/model_2000.ptenting datasets for Offline Reinforcement Learning
+# AugRL: offline RL, with little data
 
 Team project repo for the TUM course _Advanced Deep Learning for Robotics_ (ADLR).
 
@@ -16,19 +16,14 @@ pip install -r requirements.txt
 
 ## Milestones
 The key steps for the project are the following:
-
-- Implement data augmentation techniques on the available datasets
+- Implement data augmentation techniques
 - Test and benchmark the selected offline algorithms in the Mujoco environments (half-cheetah, humanoid), with standard and augmented datasets
-- Extend the analysis to more complex environments, with special focus on generalization and robustness towards changes
-- Implement and experiment with heuristic methods for data quality evaluation and benchmark
-- Consider training using purely artificial data. This requires a generator to manufacture plausible trajectories either unsupervised or from the available offline rollouts, then label those trajectories with a reward
+- Exploratory data and downstream reward labeling with a learned reward function
 
 ## Data augmentation
-The planned augmentations for are
 - __Additive noise__: eg uniform, Gaussian
 - __State mixup__
 - __Adversarial state training__
-- Problem-specific augmentations, dependent on the environment
 
 ## Related work
 - [d3rlpy](https://github.com/takuseno/d3rlpy) provides high quality implementations of state of the art offline and online RL algorithms. We picked it as our codebase
